@@ -10,6 +10,7 @@ Long term storage. There are a lot of documents, archives, etc that contain defl
 Deflate is a very simple, but not very strong compression algorithm. For long term storage,
 it makes sense to compress the uncompressed deflate stream with a stronger algorithm, like
 lzma, rolz, bwt or others.
+
 Reconstructing the original deflate stream becomes important if the position or size
 of the reconstructed deflate streams must not differ, e.g. if those streams are embedded
 into executables, or unsupported archive files where the indices cannot be adapted correctly.
@@ -32,9 +33,8 @@ There are currently at least two tools available which try to solve this problem
 What about "difflate"?
 ----------------------
 The author of "precomp" has announced quite some time ago to work on "difflate", 
-which should basically be an open source alternative to "reflate". The current 
-status is unclear. Otherwise I might have decided to just contribute to "difflate" 
-instead of working on this from scratch.
+which should basically be an open source alternative to "reflate". It is still in
+development and not yet feature complete. Let's wait and see.
 
 
 So, what is the point of "preflate"?
@@ -56,6 +56,7 @@ had been created by zlib, and if so, the correct compression parameters. The rec
 info for the zlib streams was 12 bytes (including a three byte header). Without the header,
 and with a small check, it could have been 2 bytes (1 bit to say "yes, this is zlib", and the zlib 
 parameters). 
+
 For the 7zip and kzip compressed files, reconstruction info size was about 50-60% of "reflate".
 
 
@@ -88,9 +89,11 @@ Credits
 - "zlib" by Mark Adler et al.
 - "7zip" by Igor Pavlov
 - "kzip" by Ken Silverman
+
 All of the software above is just AWESOME!
 
 - the ENCODE.RU data compression forum (http://encode.ru/forum/2-Data-Compression)
+
 If you want to know about the new hot stuff in data compression (doesn't happen
 too often though), look here first.
 
@@ -99,13 +102,18 @@ Notes
 -----
 Currently, "preflate" uses code from two libraries:
 - packARI by Matthias Stirner, which is licensed under LGPL3
+
   (directory packARI)
+
   It is used for the arithmetic coding of the reconstruction information.
 - zlib 1.2.11 by Mark Adler et al., under the zlib license.
+
   (directory zlib 1.2.11.dec. Does NOT contain the full zlib library!)
+
   It is used for the decoding of deflate streams, and some callbacks were
   added to get the decoded trees and tokens, which are then used to build
   the reconstruction information.
+
 The usage of both libraries will be removed in the future. 
 There already is a new implementation of deflate decoding (which is still slower 
 than the zlib one with callbacks).
