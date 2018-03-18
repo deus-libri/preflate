@@ -26,7 +26,8 @@ PreflateTokenPredictor::PreflateTokenPredictor(
   , params(params_)
   , fast(params_.isFastCompressor())
   , predictionFailure(false)
-  , prevLen(0) {
+  , prevLen(0)
+  , emptyBlockAtEnd(false) {
 
   if (state.availableInputSize() >= 2) {
     hash.updateRunningHash(state.inputCursor()[0]);
@@ -139,6 +140,15 @@ void PreflateTokenPredictor::analyzeBlock(
   analysis.tokenCount = block.tokens.size();
   analysis.tokenInfo.resize(analysis.tokenCount);
   analysis.blockSizePredicted = true;
+  analysis.inputEOF = false;
+
+  if (analysis.type == PreflateTokenBlock::STORED) {
+    analysis.tokenCount = block.uncompressedLen;
+    hash.updateHash(block.uncompressedLen);
+    analysis.inputEOF = state.availableInputSize() == 0;
+    return;
+  }
+
   for (unsigned i = 0, n = block.tokens.size(); i < n; ++i) {
     PreflateToken targetToken = block.tokens[i];
     if (targetToken.len > 258) {
@@ -197,6 +207,7 @@ void PreflateTokenPredictor::analyzeBlock(
   if (!predictEOB()) {
     analysis.blockSizePredicted = false;
   }
+  analysis.inputEOF = state.availableInputSize() == 0;
 }
 
 void PreflateTokenPredictor::encodeBlock(
@@ -205,6 +216,12 @@ void PreflateTokenPredictor::encodeBlock(
   BlockAnalysisResult& analysis = analysisResults[blockno];
 
   codec->encode(CORR_BLOCK_TYPE, analysis.type);
+
+  if (analysis.type == PreflateTokenBlock::STORED) {
+    codec->encodeValue(analysis.tokenCount, 16);
+    return;
+  }
+
   codec->encode(CORR_EOB_MISPREDICTION, !analysis.blockSizePredicted);
   if (!analysis.blockSizePredicted) {
     unsigned blocksizeBits = bitLength(analysis.tokenCount);
@@ -247,6 +264,21 @@ void PreflateTokenPredictor::encodeBlock(
     }
   }
 }
+void PreflateTokenPredictor::encodeEOF(
+    PreflateStatisticalEncoder* codec,
+    const unsigned blockno,
+    const bool lastBlock) {
+  BlockAnalysisResult& analysis = analysisResults[blockno];
+
+  if (analysis.inputEOF) {
+    codec->encodeValue(!lastBlock, 1);
+  } else {
+    // If we still have input left, this shouldn't be the last block
+    if (lastBlock) {
+      predictionFailure = true;
+    }
+  }
+}
 
 void PreflateTokenPredictor::updateModel(
   PreflateStatisticalModel* model,
@@ -254,6 +286,11 @@ void PreflateTokenPredictor::updateModel(
   BlockAnalysisResult& analysis = analysisResults[blockno];
 
   model->blockType[analysis.type]++;
+
+  if (analysis.type == PreflateTokenBlock::STORED) {
+    return;
+  }
+
   model->EOBMisprediction[!analysis.blockSizePredicted]++;
 
   unsigned correctivePos = 0;
@@ -305,13 +342,11 @@ PreflateTokenBlock PreflateTokenPredictor::decodeBlock(
   switch (bt) {
   case PreflateTokenBlock::STORED:
     block.type = PreflateTokenBlock::STORED;
-    predictionFailure = true;
-    return PreflateTokenBlock();
-    break;
+    block.uncompressedLen = codec->decodeValue(16);
+    hash.updateHash(block.uncompressedLen);
+    return block;
   case PreflateTokenBlock::STATIC_HUFF:
     block.type = PreflateTokenBlock::STATIC_HUFF;
-    predictionFailure = true;
-    return PreflateTokenBlock();
     break;
   case PreflateTokenBlock::DYNAMIC_HUFF:
     block.type = PreflateTokenBlock::DYNAMIC_HUFF;
@@ -388,4 +423,10 @@ PreflateTokenBlock PreflateTokenPredictor::decodeBlock(
     ++currentTokenCount;
   }
   return block;
+}
+bool PreflateTokenPredictor::decodeEOF(PreflateStatisticalDecoder* codec) {
+  if (state.availableInputSize() == 0) {
+    return codec->decodeValue(1) == 0;
+  }
+  return false;
 }

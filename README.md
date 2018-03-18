@@ -1,4 +1,4 @@
-preflate v0.1.0
+preflate v0.1.1
 ===============
 Library to split deflate streams into uncompressed data and reconstruction information,
 or reconstruct the original deflate stream from those two. 

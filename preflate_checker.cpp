@@ -110,6 +110,7 @@ bool preflate_checker(const std::vector<unsigned char>& deflate_raw) {
       printf("block %d: compress failed tree encoding\n", i);
       return false;
     }
+    tokenPredictorE.encodeEOF(&codecE, i, i + 1 == blocks.size());
   }
   std::vector<unsigned char> preflate_diff = codecE.encodeFinish();
   printf("Prediction diff has size %d\n", preflate_diff.size());
@@ -161,8 +162,13 @@ bool preflate_checker(const std::vector<unsigned char>& deflate_raw) {
 
   PreflateTokenPredictor tokenPredictorD(paramsD, unpacked_output);
   PreflateTreePredictor treePredictorD(unpacked_output);
-  PreflateBlockReencoder deflater(unpacked_output);
+
+  MemStream mem;
+  BitOutputStream bos(mem);
+
+  PreflateBlockReencoder deflater(bos, unpacked_output);
   unsigned blockno = 0;
+  bool eof = true;
   do {
     if (blockno >= blocks.size()) {
       printf("block number too big: org %d, new %d\n", blocks.size(), blockno);
@@ -200,31 +206,34 @@ bool preflate_checker(const std::vector<unsigned char>& deflate_raw) {
       printf("block %d: tree uncompress failed\n", blockno);
       return false;
     }
-    if (block.nlen != blocks[blockno].nlen) {
-      printf("block %d: literal/len count differs: org %d, new %d\n", 
-             blockno, blocks[blockno].nlen, block.nlen);
-      return false;
+    if (block.type == PreflateTokenBlock::DYNAMIC_HUFF) {
+      if (block.nlen != blocks[blockno].nlen) {
+        printf("block %d: literal/len count differs: org %d, new %d\n",
+               blockno, blocks[blockno].nlen, block.nlen);
+        return false;
+      }
+      if (block.ndist != blocks[blockno].ndist) {
+        printf("block %d: dist count differs: org %d, new %d\n",
+               blockno, blocks[blockno].ndist, block.ndist);
+        return false;
+      }
+      if (block.ncode != blocks[blockno].ncode) {
+        printf("block %d: tree code count differs: org %d, new %d\n",
+               blockno, blocks[blockno].ncode, block.ncode);
+        return false;
+      }
+      if (block.treecodes != blocks[blockno].treecodes) {
+        printf("block %d: generated tree codes differs\n", blockno);
+        return false;
+      }
     }
-    if (block.ndist != blocks[blockno].ndist) {
-      printf("block %d: dist count differs: org %d, new %d\n",
-             blockno, blocks[blockno].ndist, block.ndist);
-      return false;
-    }
-    if (block.ncode != blocks[blockno].ncode) {
-      printf("block %d: tree code count differs: org %d, new %d\n",
-             blockno, blocks[blockno].ncode, block.ncode);
-      return false;
-    }
-    if (block.treecodes != blocks[blockno].treecodes) {
-      printf("block %d: generated tree codes differs\n", blockno);
-      return false;
-    }
-    deflater.writeBlock(block, tokenPredictorD.eof());
+    eof = tokenPredictorD.decodeEOF(&codecD);
+    deflater.writeBlock(block, eof);
     ++blockno;
-  } while (!tokenPredictorD.eof());
+  } while (!eof);
   deflater.flush();
 
-  std::vector<unsigned char> deflate_raw_out = std::move(deflater.output);
+  std::vector<unsigned char> deflate_raw_out = mem.extractData();
   for (unsigned i = 0, n = std::min(deflate_raw.size(), deflate_raw_out.size()); i < n; ++i) {
     if (deflate_raw[i] != deflate_raw_out[i]) {
       printf("created deflate stream differs at offset %d\n", i);

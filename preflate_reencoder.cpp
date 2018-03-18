@@ -17,6 +17,8 @@
 #include "preflate_statistical_codec.h"
 #include "preflate_token_predictor.h"
 #include "preflate_tree_predictor.h"
+#include "support/bitstream.h"
+#include "support/memstream.h"
 
 bool preflate_reencode(std::vector<unsigned char>& deflate_raw,
                        const std::vector<unsigned char>& preflate_diff,
@@ -34,7 +36,12 @@ bool preflate_reencode(std::vector<unsigned char>& deflate_raw,
   }
   PreflateTokenPredictor tokenPredictor(params, unpacked_input);
   PreflateTreePredictor treePredictor(unpacked_input);
-  PreflateBlockReencoder deflater(unpacked_input);
+
+  MemStream mem;
+  BitOutputStream bos(mem);
+
+  PreflateBlockReencoder deflater(bos, unpacked_input);
+  bool eof = true;
   do {
     PreflateTokenBlock block = tokenPredictor.decodeBlock(&codec);
     if (!treePredictor.decodeBlock(block, &codec)) {
@@ -43,9 +50,11 @@ bool preflate_reencode(std::vector<unsigned char>& deflate_raw,
     if (tokenPredictor.predictionFailure || treePredictor.predictionFailure) {
       return false;
     }
-    deflater.writeBlock(block, tokenPredictor.eof());
-  } while (!tokenPredictor.eof());
+    eof = tokenPredictor.decodeEOF(&codec);
+
+    deflater.writeBlock(block, eof);
+  } while (!eof);
   deflater.flush();
-  deflate_raw = std::move(deflater.output);
+  deflate_raw = mem.extractData();
   return true;
 }

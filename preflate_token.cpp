@@ -15,18 +15,28 @@
 #include "preflate_token.h"
 
 bool isEqual(const PreflateTokenBlock& b1, const PreflateTokenBlock& b2) {
-  if (b1.type != b2.type || b1.ncode != b2.ncode || b1.nlen != b2.nlen || b1.ndist != b2.ndist) {
+  if (b1.type != b2.type) {
     return false;
   }
-  if (b1.treecodes != b2.treecodes) {
-    return false;
-  }
-  if (b1.tokens.size() != b2.tokens.size()) {
-    return false;
-  }
-  for (unsigned i = 0, n = b1.tokens.size(); i < n; ++i) {
-    if (b1.tokens[i].len != b2.tokens[i].len || b1.tokens[i].dist != b2.tokens[i].dist) {
+//  if (b1.uncompressedLen != b2.uncompressedLen) {
+//    return false;
+//  }
+  if (b1.type != PreflateTokenBlock::STORED) {
+    if (b1.type == PreflateTokenBlock::DYNAMIC_HUFF) {
+      if (b1.ncode != b2.ncode || b1.nlen != b2.nlen || b1.ndist != b2.ndist) {
+        return false;
+      }
+      if (b1.treecodes != b2.treecodes) {
+        return false;
+      }
+    }
+    if (b1.tokens.size() != b2.tokens.size()) {
       return false;
+    }
+    for (unsigned i = 0, n = b1.tokens.size(); i < n; ++i) {
+      if (b1.tokens[i].len != b2.tokens[i].len || b1.tokens[i].dist != b2.tokens[i].dist) {
+        return false;
+      }
     }
   }
   return true;

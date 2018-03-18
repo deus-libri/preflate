@@ -363,6 +363,10 @@ void PreflateTreePredictor::analyzeBlock(
   }
   analysisResults.push_back(BlockAnalysisResult());
   BlockAnalysisResult& analysis = analysisResults[blockno];
+  analysis.blockType = block.type;
+  if (analysis.blockType != PreflateTokenBlock::DYNAMIC_HUFF) {
+    return;
+  }
 
   unsigned Lcodes[PreflateConstants::L_CODES], Dcodes[PreflateConstants::D_CODES];
   unsigned Lcount = 0, Dcount = 0;
@@ -404,6 +408,9 @@ void PreflateTreePredictor::encodeBlock(
   PreflateStatisticalEncoder* codec,
   const unsigned blockno) {
   BlockAnalysisResult& analysis = analysisResults[blockno];
+  if (analysis.blockType != PreflateTokenBlock::DYNAMIC_HUFF) {
+    return;
+  }
 
   unsigned infoPos = 0, correctivePos = 0;
   unsigned char info = analysis.tokenInfo[infoPos++];
@@ -467,6 +474,9 @@ void PreflateTreePredictor::updateModel(
   PreflateStatisticalModel* model,
   const unsigned blockno) {
   BlockAnalysisResult& analysis = analysisResults[blockno];
+  if (analysis.blockType != PreflateTokenBlock::DYNAMIC_HUFF) {
+    return;
+  }
 
   unsigned infoPos = 0, correctivePos = 0;
   unsigned char info = analysis.tokenInfo[infoPos++];
@@ -617,6 +627,10 @@ unsigned PreflateTreePredictor::reconstructLDTrees(
 bool PreflateTreePredictor::decodeBlock(
     PreflateTokenBlock& block, 
     PreflateStatisticalDecoder* codec) {
+  if (block.type != PreflateTokenBlock::DYNAMIC_HUFF) {
+    return true;
+  }
+
   unsigned Lcodes[PreflateConstants::L_CODES], Dcodes[PreflateConstants::D_CODES];
   unsigned Lcount = 0, Dcount = 0;
   collectTokenStatistics(Lcodes, Dcodes, Lcount, Dcount, block);

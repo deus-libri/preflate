@@ -351,7 +351,7 @@ void PreflateStatisticalEncoder::encode(const PreflateCorrectionType& type, cons
     model->TCCountMisprediction.encode(codec, value);
     break;
   case CORR_TC_BITLENGTH_CORRECTION:
-    model->LDBitlengthCorrection.encode(codec, value, refvalue, 0, 7);
+    model->TCBitlengthCorrection.encode(codec, value, refvalue, 0, 7);
     break;
   }
 }
@@ -747,7 +747,7 @@ int PreflateStatisticalDecoder::decode(const PreflateCorrectionType& type, const
   case CORR_TC_COUNT_MISPREDICTION:
     return model->TCCountMisprediction.decode(codec);
   case CORR_TC_BITLENGTH_CORRECTION:
-    return model->LDBitlengthCorrection.decode(codec, refvalue, 0, 7);
+    return model->TCBitlengthCorrection.decode(codec, refvalue, 0, 7);
   default:
     return 0;
   }

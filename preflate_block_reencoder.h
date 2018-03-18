@@ -16,11 +16,20 @@
 #define PREFLATE_BLOCK_REENCODER_H
 
 #include "preflate_constants.h"
-#include "preflate_input.h"
 #include "preflate_token.h"
+#include "support/bitstream.h"
+#include "support/huffman_encoder.h"
 
-struct PreflateBlockReencoder {
-  enum {
+class PreflateBlockReencoder {
+public:
+  enum ErrorCode {
+    OK,
+    LITERAL_OUT_OF_BOUNDS,
+    TREE_OUT_OF_RANGE,
+    BAD_CODE_TREE,
+    BAD_LD_TREE,
+  };
+  /*  enum {
     BUFSIZE = 1024
   };
 
@@ -28,28 +37,39 @@ struct PreflateBlockReencoder {
   unsigned char buffer[BUFSIZE];
   unsigned bufferpos;
   unsigned bitbuffer;
-  unsigned bitbuffersize;
-  PreflateInput input;
+  unsigned bitbuffersize;*/
 
-  unsigned short litLenDistCodeStorage[PreflateConstants::LD_CODES];
+/*  unsigned short litLenDistCodeStorage[PreflateConstants::LD_CODES];
   unsigned short treeCodeStorage[PreflateConstants::BL_CODES];
   unsigned char litLenDistBitStorage[PreflateConstants::LD_CODES];
   unsigned char treeBitStorage[PreflateConstants::BL_CODES];
   const unsigned short *litLenCode, *distCode, *treeCode;
-  const unsigned char *litLenBits, *distBits, *treeBits;
+  const unsigned char *litLenBits, *distBits, *treeBits;*/
 
-  PreflateBlockReencoder(const std::vector<unsigned char>& dump);
-  void writeBlock(const PreflateTokenBlock&, const bool last);
-  void writeBits(unsigned value, unsigned bits);
-  void writeTokens(const std::vector<PreflateToken>& tokens);
-  void unpackTreeCodes(const std::vector<unsigned char>& treecodes, const unsigned ncode, const unsigned nlen);
-  void generateTreeBitCodes(
-    unsigned short* codes,
-    const unsigned char* lengths,
-    const unsigned size);
-  void generateAllTreeBitCodes(const unsigned nlen, const unsigned ndist);
-  void writeTrees(const std::vector<unsigned char>& treecodes, const unsigned count);
+  PreflateBlockReencoder(BitOutputStream& bos, const std::vector<unsigned char>& uncompressedData);
+  bool writeBlock(const PreflateTokenBlock&, const bool last);
   void flush();
+
+  ErrorCode status() const {
+    return _errorCode;
+  }
+
+private:
+  bool _error(const ErrorCode);
+
+  void _setupStaticTables();
+  bool _buildAndWriteDynamicTables(const PreflateTokenBlock&);
+  bool _writeTokens(const std::vector<PreflateToken>& tokens);
+
+  BitOutputStream& _output;
+  const std::vector<unsigned char>& _uncompressedData;
+  size_t _uncompressedDataPos;
+  ErrorCode _errorCode;
+
+  const HuffmanEncoder* _litLenEncoder;
+  const HuffmanEncoder* _distEncoder;
+  HuffmanEncoder _dynamicLitLenEncoder;
+  HuffmanEncoder _dynamicDistEncoder;
 };
 
 #endif /* PREFLATE_BLOCK_REENCODER_H */

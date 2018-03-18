@@ -27,24 +27,6 @@ struct PreflateBlockTrees {
   static const HuffmanDecoder* staticDistTreeDecoder();
   static const HuffmanEncoder* staticLitLenTreeEncoder();
   static const HuffmanEncoder* staticDistTreeEncoder();
-
-  unsigned short litLenDistCodeStorage[PreflateConstants::LD_CODES];
-  unsigned short treeCodeStorage[PreflateConstants::BL_CODES];
-  unsigned char litLenDistBitStorage[PreflateConstants::LD_CODES];
-  unsigned char treeBitStorage[PreflateConstants::BL_CODES];
-  const unsigned short *litLenCode, *distCode, *treeCode;
-  const unsigned char *litLenBits, *distBits, *treeBits;
-
-  bool unpackTreeCodes(
-    const std::vector<unsigned char>& treecodes, 
-    const unsigned ncode, 
-    const unsigned nlen,
-    const unsigned ndist);
-  bool generateTreeBitCodes(
-    unsigned short* codes,
-    const unsigned char* lengths,
-    const unsigned size);
-  bool generateAllTreeBitCodes(const unsigned nlen, const unsigned ndist);
 };
 
 #endif /* PREFLATE_BLOCK_TREES_H */

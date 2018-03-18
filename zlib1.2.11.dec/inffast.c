@@ -125,8 +125,8 @@ unsigned start;         /* inflate()'s starting value for strm->avail_out */
         else if (op & 16) {                     /* length base */
             len = (unsigned)(here.val);
             op &= 15;                           /* number of extra bits */
+            lenx = op > 0;
             if (op) {
-                lenx = op > 0;
                 if (bits < op) {
                     hold += (unsigned long)(*in++) << bits;
                     bits += 8;

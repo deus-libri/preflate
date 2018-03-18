@@ -14,148 +14,174 @@
 
 #include <algorithm>
 #include "preflate_block_reencoder.h"
+#include "preflate_block_trees.h"
 #include "support/bit_helper.h"
 
-PreflateBlockReencoder::PreflateBlockReencoder(const std::vector<unsigned char>& dump)
-  : bufferpos(0)
-  , bitbuffer(0)
-  , bitbuffersize(0)
-  , input(dump) {
+PreflateBlockReencoder::PreflateBlockReencoder(
+    BitOutputStream& bos,
+    const std::vector<unsigned char>& uncompressedData)
+  : _output(bos)
+  , _uncompressedData(uncompressedData)
+  , _uncompressedDataPos(0)
+  , _errorCode(OK)
+  , _dynamicLitLenEncoder(nullptr, 0, false)
+  , _dynamicDistEncoder(nullptr, 0, false) {
 }
 
-void PreflateBlockReencoder::unpackTreeCodes(
-    const std::vector<unsigned char>& treecodes, 
-    const unsigned ncode,
-    const unsigned nlen) {
-  memset(litLenDistBitStorage, 0, sizeof(litLenDistBitStorage));
-  memset(treeBitStorage, 0, sizeof(treeBitStorage));
-  for (unsigned i = 0; i < ncode; ++i) {
-    treeBitStorage[PreflateConstants::treeCodeOrderTable[i]] = treecodes[i];
+bool PreflateBlockReencoder::_error(const ErrorCode code) {
+  _errorCode = code;
+  return false;
+}
+
+void PreflateBlockReencoder::_setupStaticTables() {
+  _litLenEncoder = PreflateBlockTrees::staticLitLenTreeEncoder();
+  _distEncoder   = PreflateBlockTrees::staticDistTreeEncoder();
+}
+
+bool PreflateBlockReencoder::_buildAndWriteDynamicTables(const PreflateTokenBlock& block) {
+  if (block.ncode < 4 || block.ncode > PreflateConstants::BL_CODES
+      || block.treecodes.size() < block.ncode
+      || block.nlen < PreflateConstants::LITERALS + 1
+      || block.nlen > PreflateConstants::L_CODES
+      || block.ndist < 1 || block.ndist > PreflateConstants::D_CODES) {
+    return _error(TREE_OUT_OF_RANGE);
   }
-  for (unsigned i = ncode, o = 0; i < treecodes.size(); ++i) {
-    unsigned char code = treecodes[i];
-    if (code < 16) {
-      litLenDistBitStorage[o++] = code;
-    } else {
-      unsigned char len = treecodes[++i];
-      unsigned char tocopy = code == 16 ? litLenDistBitStorage[o - 1] : 0;
-      while (len-- > 0) {
-        litLenDistBitStorage[o++] = tocopy;
-      }
+  unsigned char tcBitLengths[PreflateConstants::BL_CODES];
+  unsigned char ldBitLengths[PreflateConstants::LD_CODES];
+  memset(tcBitLengths, 0, sizeof(tcBitLengths));
+  memset(ldBitLengths, 0, sizeof(ldBitLengths));
+
+  for (unsigned i = 0, n = block.ncode; i < n; ++i) {
+    unsigned char tc = block.treecodes[i];
+    _output.put(tc, 3);
+    tcBitLengths[PreflateConstants::treeCodeOrderTable[i]] = tc;
+  }
+  HuffmanEncoder tcTree(tcBitLengths, PreflateConstants::BL_CODES, true);
+  if (tcTree.error()) {
+    return _error(BAD_CODE_TREE);
+  }
+  // unpack tree codes
+  unsigned o = 0, maxo = block.nlen + block.ndist;
+  for (auto i = block.treecodes.begin() + block.ncode, e = block.treecodes.end(); i != e; ++i) {
+    unsigned char code = *i;
+    if (code > 18) {
+      return _error(BAD_LD_TREE);
     }
-  }
-  litLenBits = litLenDistBitStorage;
-  distBits = litLenDistBitStorage + nlen;
-  treeBits = treeBitStorage;
-}
-void PreflateBlockReencoder::generateTreeBitCodes(
-    unsigned short* codes,
-    const unsigned char* lengths,
-    const unsigned size) {
-  unsigned short bl_count[16];
-  unsigned short next_code[16];
-
-  memset(bl_count, 0, sizeof(bl_count));
-  for (unsigned i = 0; i < size; ++i) {
-    bl_count[lengths[i]]++;
-  }
-  bl_count[0] = 0;
-  unsigned code = 0;
-  for (unsigned i = 1; i <= PreflateConstants::MAX_BITS; ++i) {
-    code = (code + bl_count[i - 1]) << 1;
-    next_code[i] = (unsigned short)code;
-  }
-  for (unsigned i = 0; i < size; ++i) {
-    unsigned char len = lengths[i];
-    if (!len) {
-      codes[i] = 0;
+    tcTree.encode(_output, code);
+    if (code < 16) {
+      if (o >= maxo) {
+        return _error(BAD_LD_TREE);
+      }
+      ldBitLengths[o++] = code;
       continue;
     }
-    codes[i] = bitReverse(next_code[len]++, len);
-  }
-}
-void PreflateBlockReencoder::generateAllTreeBitCodes(const unsigned nlen, const unsigned ndist) {
-  generateTreeBitCodes(treeCodeStorage, treeBitStorage, PreflateConstants::BL_CODES);
-  treeCode = treeCodeStorage;
-  generateTreeBitCodes(litLenDistCodeStorage, litLenDistBitStorage, nlen);
-  litLenCode = litLenDistCodeStorage;
-  generateTreeBitCodes(litLenDistCodeStorage + nlen, litLenDistBitStorage + nlen, ndist);
-  distCode = litLenDistCodeStorage + nlen;
-}
-
-void PreflateBlockReencoder::writeTrees(const std::vector<unsigned char>& treecodes, const unsigned tccount) {
-  for (unsigned i = 0; i < tccount; ++i) {
-    writeBits(treecodes[i], 3);
-  }
-  for (unsigned i = tccount, n = treecodes.size(); i < n; ++i) {
-    unsigned char code = treecodes[i], len;
-    writeBits(treeCode[code], treeBits[code]);
-    if (code >= 16) {
-      static unsigned char repExtraBits[3] = {2, 3, 7};
-      static unsigned char repOffset[3] = {3, 3, 11};
-      len = treecodes[++i];
-      writeBits(len - repOffset[code - 16], repExtraBits[code - 16]);
+    if (i + 1 == e) {
+      return _error(BAD_LD_TREE);
     }
+    if (code == 16 && o == 0) {
+      return _error(BAD_LD_TREE);
+    }
+    unsigned char len = *++i;
+    unsigned char tocopy = code == 16 ? ldBitLengths[o - 1] : 0;
+    static unsigned char repExtraBits[3] = {2, 3, 7};
+    static unsigned char repOffset[3] = {3, 3, 11};
+    _output.put(len - repOffset[code - 16], repExtraBits[code - 16]);
+    if (o + len > maxo) {
+      return _error(BAD_LD_TREE);
+    }
+    memset(ldBitLengths + o, tocopy, len);
+    o += len;
   }
+  if (o != maxo) {
+    return _error(BAD_LD_TREE);
+  }
+  if (!ldBitLengths[256]) {
+    return _error(BAD_LD_TREE);
+  }
+  _dynamicLitLenEncoder = HuffmanEncoder(ldBitLengths, block.nlen, true);
+  if (_dynamicLitLenEncoder.error()) {
+    return _error(BAD_LD_TREE);
+  }
+  _litLenEncoder = &_dynamicLitLenEncoder;
+
+  _dynamicDistEncoder = HuffmanEncoder(ldBitLengths + block.nlen, block.ndist, true);
+  if (_dynamicDistEncoder.error()) {
+    return _error(BAD_LD_TREE);
+  }
+  _distEncoder = &_dynamicDistEncoder;
+  return true;
 }
 
-void PreflateBlockReencoder::writeTokens(const std::vector<PreflateToken>& tokens) {
-  for (unsigned i = 0; i < tokens.size(); ++i) {
+bool PreflateBlockReencoder::_writeTokens(const std::vector<PreflateToken>& tokens) {
+  for (size_t i = 0; i < tokens.size(); ++i) {
     PreflateToken token = tokens[i];
     if (token.len == 1) {
-      unsigned literal = input.curChar();
-      writeBits(litLenCode[literal], litLenBits[literal]);
-      input.advance(1);
+      if (_uncompressedDataPos >= _uncompressedData.size()) {
+        return _error(LITERAL_OUT_OF_BOUNDS);
+      }
+      unsigned char literal = _uncompressedData[_uncompressedDataPos++];
+      _litLenEncoder->encode(_output, literal);
     } else {
       unsigned lencode = PreflateConstants::LCode(token.len);
-      writeBits(litLenCode[PreflateConstants::LITERALS + 1 + lencode], 
-                litLenBits[PreflateConstants::LITERALS + 1 + lencode]);
+      _litLenEncoder->encode(_output, PreflateConstants::LITERALS + 1 + lencode);
       unsigned lenextra = PreflateConstants::lengthExtraTable[lencode];
       if (lenextra) {
-        writeBits(token.len - PreflateConstants::MIN_MATCH - PreflateConstants::lengthBaseTable[lencode], lenextra);
+        _output.put(token.len - PreflateConstants::MIN_MATCH - PreflateConstants::lengthBaseTable[lencode], lenextra);
       }
       unsigned distcode = PreflateConstants::DCode(token.dist);
-      writeBits(distCode[distcode], distBits[distcode]);
+      _distEncoder->encode(_output, distcode);
       unsigned distextra = PreflateConstants::distExtraTable[distcode];
       if (distextra) {
-        writeBits(token.dist - 1 - PreflateConstants::distBaseTable[distcode], distextra);
+        _output.put(token.dist - 1 - PreflateConstants::distBaseTable[distcode], distextra);
       }
-      input.advance(token.len);
+      _uncompressedDataPos += token.len;
     }
   }
-  writeBits(litLenCode[256], litLenBits[256]);
+  _litLenEncoder->encode(_output, PreflateConstants::LITERALS);
+  return true;
 }
 
-void PreflateBlockReencoder::writeBlock(const PreflateTokenBlock& block, bool last) {
-  writeBits(last, 1); //
+bool PreflateBlockReencoder::writeBlock(const PreflateTokenBlock& block, bool last) {
+  if (status() != OK) {
+    return false;
+  }
+  _output.put(last, 1); //
   switch (block.type) {
   case PreflateTokenBlock::DYNAMIC_HUFF:
-    writeBits(2, 2); //
-    writeBits(block.nlen - PreflateConstants::LITERALS - 1, 5);
-    writeBits(block.ndist - 1, 5);
-    writeBits(block.ncode - 4, 4);
-    unpackTreeCodes(block.treecodes, block.ncode, block.nlen);
-    generateAllTreeBitCodes(block.nlen, block.ndist);
-    writeTrees(block.treecodes, block.ncode);
-    writeTokens(block.tokens);
+    _output.put(2, 2); //
+    _output.put(block.nlen - PreflateConstants::LITERALS - 1, 5);
+    _output.put(block.ndist - 1, 5);
+    _output.put(block.ncode - 4, 4);
+    if (!_buildAndWriteDynamicTables(block)) {
+      return false;
+    }
+    if (!_writeTokens(block.tokens)) {
+      return false;
+    }
+    break;
+  case PreflateTokenBlock::STATIC_HUFF:
+    _output.put(1, 2); //
+    _setupStaticTables();
+    if (!_writeTokens(block.tokens)) {
+      return false;
+    }
+    break;
+  case PreflateTokenBlock::STORED:
+    _output.put(0, 2); //
+    _output.fillByte();
+    _output.put(block.uncompressedLen, 16); //
+    _output.put(~block.uncompressedLen, 16); //
+    if (_uncompressedDataPos + block.uncompressedLen > _uncompressedData.size()) {
+      return _error(LITERAL_OUT_OF_BOUNDS);
+    }
+    for (unsigned i = 0; i < block.uncompressedLen; ++i) {
+      unsigned char literal = _uncompressedData[_uncompressedDataPos++];
+      _output.put(literal, 8);
+    }
     break;
   }
-}
-void PreflateBlockReencoder::writeBits(const unsigned value, const unsigned bits) {
-  bitbuffer |= (value & ((1 << bits) - 1)) << bitbuffersize;
-  bitbuffersize += bits;
-  while (bitbuffersize >= 8) {
-    buffer[bufferpos++] = bitbuffer & 0xff;
-    bitbuffer >>= 8;
-    bitbuffersize -= 8;
-    if (bufferpos >= BUFSIZE) {
-      output.insert(output.end(), buffer, buffer + BUFSIZE);
-      bufferpos = 0;
-    }
-  }
+  return true;
 }
 void PreflateBlockReencoder::flush() {
-  writeBits(0, (8 - bitbuffersize) & 7);
-  output.insert(output.end(), buffer, buffer + bufferpos);
-  bufferpos = 0;
+  _output.flush();
 }

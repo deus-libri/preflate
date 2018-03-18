@@ -32,11 +32,14 @@ struct PreflateTokenPredictor {
   bool                  fast;
   unsigned prevLen;
   unsigned currentTokenCount;
+  bool emptyBlockAtEnd;
 
   struct BlockAnalysisResult {
     PreflateTokenBlock::Type type;
     unsigned tokenCount;
     bool blockSizePredicted;
+    bool inputEOF;
+    bool lastBlock;
     std::vector<unsigned char> tokenInfo;
     std::vector<signed> correctives;
   };
@@ -50,12 +53,12 @@ struct PreflateTokenPredictor {
                    const unsigned blockno);
   void encodeBlock(PreflateStatisticalEncoder*,
                    const unsigned blockno);
+  void encodeEOF(PreflateStatisticalEncoder*,
+                 const unsigned blockno,
+                 const bool lastBlock);
 
   PreflateTokenBlock decodeBlock(PreflateStatisticalDecoder*);
-
-  bool eof() const {
-    return state.availableInputSize() == 0;
-  }
+  bool decodeEOF(PreflateStatisticalDecoder*);
 
   bool predictEOB();
   PreflateToken predictToken();

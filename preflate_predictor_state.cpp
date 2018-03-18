@@ -142,8 +142,8 @@ PreflateMatchInfo PreflatePredictorState::matchInfo(
     const PreflateToken& targetReference,
     const PreflateHashChainExt& hash) {
   PreflateMatchInfo result;
-  result.chainDepth = 0xffff;
-  result.nextChainDepth = 0xffff;
+  result.chainDepth = ~0u;
+  result.nextChainDepth = ~0u;
   result.nextLen = 0;
   result.nextDist = 0xffff;
   unsigned maxLen = std::min(availableInputSize(), (unsigned)PreflateConstants::MAX_MATCH);
@@ -165,12 +165,9 @@ PreflateMatchInfo PreflatePredictorState::matchInfo(
     return result;
   }
   unsigned endDepth = chainIt.depth();
-  unsigned maxChain = maxChainOrg - ((startDepth - endDepth) & 0xffff);/* max hash chain length */
+  unsigned maxChain = maxChainOrg - std::min(startDepth - endDepth, 0xffffu);/* max hash chain length */
 
   result.chainDepth = maxChainOrg - maxChain--;
-  if (((startDepth - endDepth) & 0xffff) != result.chainDepth) {
-    int a = 0;
-  }
   unsigned bestLen = targetReference.len;
 
   while (maxChain > 0) {

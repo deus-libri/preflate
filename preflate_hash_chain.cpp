@@ -27,10 +27,10 @@ PreflateHashChainExt::PreflateHashChainExt(
   hashMask = (1 << hashBits) - 1;
   head = new unsigned short[hashMask + 1];
   prev = new unsigned short[1 << 16];
-  chainDepth = new unsigned short[1 << 16];
+  chainDepth = new unsigned[1 << 16];
   memset(head, 0, sizeof(short) * (hashMask + 1));
   memset(prev, 0, sizeof(short) * (1 << 16));
-  memset(chainDepth, 0, sizeof(short) * (1 << 16));
+  memset(chainDepth, 0, sizeof(unsigned) * (1 << 16));
   runningHash = 0;
   if (_input.remaining() > 2) {
     updateRunningHash(_input.curChar(0));
@@ -72,10 +72,17 @@ void PreflateHashChainExt::skipHash(const unsigned l) {
   prev[p] = head[h];
   head[h] = p;
 
-  if (l >= 2) {
-    updateRunningHash(b[l]);
-    updateRunningHash(b[l + 1]);
+  // Skipped data is not inserted into the hash chain,
+  // but we must still update the chainDepth, to avoid
+  // bad analysis results
+  // --------------------
+  for (unsigned i = 1; i < l; ++i) {
+    unsigned p = (pos + i)-totalShift;
+    chainDepth[p] = 0xffff8000;
   }
+  // l must be at least 3
+  updateRunningHash(b[l]);
+  updateRunningHash(b[l + 1]);
   _input.advance(l);
 }
 void PreflateHashChainExt::reshift() {

@@ -89,7 +89,7 @@ void BitOutputStream::_flush() {
     _bitPos -= 8;
   }
   if (_bufPos >= BUF_SIZE) {
-    _output.write(_buffer, _bufPos);
+    _output.write(_buffer, BUF_SIZE);
     memcpy(_buffer, _buffer + BUF_SIZE, _bufPos - BUF_SIZE);
     _bufPos -= BUF_SIZE;
   }

@@ -33,6 +33,7 @@ struct PreflateTreePredictor {
   bool predictionFailure;
 
   struct BlockAnalysisResult {
+    PreflateTokenBlock::Type blockType;
     std::vector<unsigned char> tokenInfo;
     std::vector<signed> correctives;
   };

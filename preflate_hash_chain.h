@@ -20,7 +20,7 @@
 
 struct PreflateHashIterator {
   const unsigned short* chain;
-  const unsigned short* chainDepth;
+  const unsigned * chainDepth;
   const unsigned refPos;
   const unsigned maxDist;
   unsigned curPos, curDist;
@@ -28,7 +28,7 @@ struct PreflateHashIterator {
 
   PreflateHashIterator(
       const unsigned short* chain_,
-      const unsigned short* depth_,
+      const unsigned * depth_,
       const unsigned refPos_,
       const unsigned maxDist_,
       unsigned startPos_)
@@ -67,7 +67,7 @@ struct PreflateHashIterator {
 struct PreflateHashChainExt {
   PreflateInput _input;
   unsigned short* head;
-  unsigned short* chainDepth;
+  unsigned * chainDepth;
   unsigned short* prev;
   unsigned char hashBits, hashShift;
   unsigned short runningHash, hashMask;

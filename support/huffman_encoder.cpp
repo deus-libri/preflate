@@ -53,6 +53,7 @@ bool HuffmanEncoder::_constructTables(
     unsigned code = bitReverse(nextCode[l]++, k);
     _lookup[i] = (code << 5) | k;
   }
+  return true;
 }
 void HuffmanEncoder::_constructErrorTable(
     const unsigned symbolCount
