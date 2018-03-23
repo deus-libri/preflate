@@ -1,4 +1,4 @@
-preflate v0.1.1
+preflate v0.1.2
 ===============
 Library to split deflate streams into uncompressed data and reconstruction information,
 or reconstruct the original deflate stream from those two. 
@@ -45,30 +45,30 @@ The goal of "preflate" is to get the best of both worlds:
 - for all other deflate streams, we want to be able to reconstruct them with
   reconstruction information that is not much larger than "reflate"
 
-Right now, it has been tested on two files:
-- BOOK1, which is a 770KiB text file, which is used quite often when comparing compression 
-  quality. (Don't ask me why.)
-  It was compressed with zlib compression level 1 to 9, 7zip fast and ultra, and kzip.
-- a 20MiB assembly dump, compressed by zlib -9 and kzip.
+Right now, it has been tested on 11159 valid deflate streams, extracted with
+"rawdet" from archives etc., and preflate was capable of inflating and reconstructing 
+all of them.
 
-For these deflate streams, "preflate" was capable of correctly detecting if the stream
-had been created by zlib, and if so, the correct compression parameters. The reconstruction
-info for the zlib streams was 12 bytes (including a three byte header). Without the header,
-and with a small check, it could have been 2 bytes (1 bit to say "yes, this is zlib", and the zlib 
-parameters). 
-
-For the 7zip and kzip compressed files, reconstruction info size was about 50-60% of "reflate".
+There are still known (and also likely unknown) corner cases of valid deflate stream in 
+which preflate will fail.
 
 
 So, is "preflate" already better than "precomp" and "reflate"? 
 --------------------------------------------------------------
 No. It isn't. 
 
-It's hardly tested. (Just a dozen deflate streams from two source files.)
+Test coverage is still quite low, and testing it is currently quite cumbersome
+(because it only works on raw deflate streams which need to be extracted first.)
 
-It's very slow. (50-500% slower than "precomp" or "reflate", just for those dozen streams).
+It's very slow. (50-500% slower than "precomp" or "reflate"). Especially for files
+containing long runs of the same byte (e.g. \0 or spaces), it gets very, very slow.
 
-It will not handle all valid deflate streams (I'm looking at you, "len 227+31").
+It will not handle all valid deflate streams. (E.g., preflate will fail if the reference
+length 258 is encoded as 227+31.) I don't know if this is really a problem. All good
+encoders would never encode a length of 227+31 anyway.
+
+The detection of the zlib compression parameters is not always on spot, which leads to
+the creation of larger diffs than necessary.
 
 Right now, it is a proof of concept, that we can do better than both "precomp" and "reflate". 
 It just isn't stable and fast enough yet to be of practical use.
@@ -85,7 +85,7 @@ wait for the next update. Sorry.
 Credits
 -------
 - "precomp" by Christian Schneider
-- "reflate" by Eugene Shelwien
+- "reflate" and "rawdet" by Eugene Shelwien
 - "zlib" by Mark Adler et al.
 - "7zip" by Igor Pavlov
 - "kzip" by Ken Silverman
@@ -96,6 +96,12 @@ All of the software above is just AWESOME!
 
 If you want to know about the new hot stuff in data compression (doesn't happen
 too often though), look here first.
+
+- www.squeezechart.com by Stephan Busch
+
+Contains information about a lot of interesting compression tools of which I probably
+would never have known without this site. Also, Stephan helped getting rid of several
+bugs in preflate. Thank you.
 
 
 Notes
