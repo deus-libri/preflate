@@ -94,30 +94,37 @@ PreflateToken PreflatePredictorState::match(
     const unsigned hashHead,
     const unsigned prevLen,
     const unsigned offset,
-    const bool fullSearch) {
+    const bool veryFarMatches,
+    const bool matchesToStart,
+    const unsigned maxDepth) {
   PreflateToken bestMatch(PreflateToken::NONE);
   unsigned maxLen = std::min(availableInputSize() - offset, (unsigned)PreflateConstants::MAX_MATCH);
   if (maxLen < std::max(prevLen + 1, (unsigned)PreflateConstants::MIN_MATCH)) {
     return bestMatch;
   }
 
-  unsigned maxDist = windowSize() - (fullSearch ? 0 : PreflateConstants::MIN_LOOKAHEAD + 1);
+  unsigned maxDistHop0 = windowSize() - (veryFarMatches ? 0 : PreflateConstants::MIN_LOOKAHEAD);
+  unsigned maxDistHop1Plus = windowSize() - (veryFarMatches ? 0 : PreflateConstants::MIN_LOOKAHEAD + 1);
   unsigned curPos = currentInputPos() + offset;
-  unsigned curMaxDist = std::min(curPos - (fullSearch ? 0 : 1), maxDist);
-  unsigned curMaxDistAlt = std::min(curPos - (fullSearch ? 0 : 1), windowSize() - (fullSearch ? 0 : PreflateConstants::MIN_LOOKAHEAD));
+  unsigned maxDistToStart = curPos - (matchesToStart ? 0 : 1);
+  unsigned curMaxDistHop0 = std::min(maxDistToStart, maxDistHop0);
+  unsigned curMaxDistHop1Plus = std::min(maxDistToStart, maxDistHop1Plus);
 
-  PreflateHashIterator chainIt = iterateFromNode(hashHead, curPos, curMaxDist);
-  if (chainIt.dist() > curMaxDistAlt) {
+  PreflateHashIterator chainIt = iterateFromNode(hashHead, curPos, curMaxDistHop1Plus);
+  if (chainIt.dist() > curMaxDistHop0) {
     return bestMatch;
   }
 
   const unsigned char* input = inputCursor() + offset;
 
-  unsigned maxChain = fullSearch ? 0xffff : maxChainLength();/* max hash chain length */
-  unsigned niceLen = fullSearch ? maxLen : std::min(niceMatchLength(), maxLen);
+  unsigned maxChain = maxChainLength();/* max hash chain length */
+  unsigned niceLen = maxDepth > 0 ? maxLen : std::min(niceMatchLength(), maxLen);
 
-  if (!fullSearch && prevLen >= goodMatchLength()) {
+  if (prevLen >= goodMatchLength()) {
     maxChain >>= 2;
+  }
+  if (maxDepth > 0) {
+    maxChain = maxDepth;
   }
 
   unsigned bestLen = prevLen;
@@ -137,12 +144,27 @@ PreflateToken PreflatePredictorState::match(
   return bestMatch;
 }
 
-PreflateMatchInfo PreflatePredictorState::matchInfo(
+unsigned short PreflatePredictorState::matchDepth(
     const unsigned hashHead,
     const PreflateToken& targetReference,
     const PreflateHashChainExt& hash) {
-  PreflateMatchInfo result;
-  result.chainDepth = ~0u;
+  unsigned curPos = currentInputPos();
+  unsigned curMaxDist = std::min(curPos, windowSize());
+
+  unsigned startDepth = hash.getNodeDepth(hashHead);
+  PreflateHashIterator chainIt = hash.iterateFromPos(curPos - targetReference.dist, curPos, curMaxDist);
+  if (!chainIt.curPos || targetReference.dist > curMaxDist) {
+    return 0xffffu;
+  }
+  unsigned endDepth = chainIt.depth();
+  return std::min(startDepth - endDepth, 0xffffu);
+}
+
+PreflateNextMatchInfo PreflatePredictorState::nextMatchInfo(
+  const unsigned hashHead,
+  const PreflateToken& targetReference,
+  const PreflateHashChainExt& hash) {
+  PreflateNextMatchInfo result;
   result.nextChainDepth = ~0u;
   result.nextLen = 0;
   result.nextDist = 0xffff;
@@ -161,13 +183,12 @@ PreflateMatchInfo PreflatePredictorState::matchInfo(
   unsigned maxChainOrg = maxChainLength();/* max hash chain length */
   PreflateHashIterator chainIt = hash.iterateFromPos(curPos - targetReference.dist, curPos, curMaxDist);
   if (!chainIt.curPos || (hashHead == chainIt.curPos && chainIt.dist() > curMaxDistAlt)
-    || (hashHead != chainIt.curPos  && chainIt.dist() > curMaxDist)) {
+      || (hashHead != chainIt.curPos  && chainIt.dist() > curMaxDist)) {
     return result;
   }
   unsigned endDepth = chainIt.depth();
   unsigned maxChain = maxChainOrg - std::min(startDepth - endDepth, 0xffffu);/* max hash chain length */
 
-  result.chainDepth = maxChainOrg - maxChain--;
   unsigned bestLen = targetReference.len;
 
   while (maxChain > 0) {

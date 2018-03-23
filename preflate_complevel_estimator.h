@@ -21,11 +21,17 @@
 struct PreflateCompLevelInfo {
   unsigned possibleCompressionLevels;
   unsigned recommendedCompressionLevel;
+  bool zlibCompatible;
 
   unsigned referenceCount;
   unsigned unfoundReferences;
   unsigned short maxChainDepth;
-  unsigned short minNextChainDepth;
+  unsigned short longestLen3Dist;
+  unsigned short longestDistAtHop0;
+  unsigned short longestDistAtHop1Plus;
+  bool matchToStart;
+  bool veryFarMatches;
+  bool farLen3Matches;
 };
 
 struct PreflateCompLevelEstimatorState {

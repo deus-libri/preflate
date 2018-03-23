@@ -22,8 +22,11 @@
 #include "preflate_parser_config.h"
 #include "preflate_token.h"
 
-struct PreflateMatchInfo {
-  unsigned short chainDepth;
+struct PreflatePreviousMatchInfo {
+  PreflateToken previousMatches[256];
+};
+
+struct PreflateNextMatchInfo {
   unsigned short nextChainDepth;
   unsigned short nextLen;
   unsigned short nextDist;
@@ -97,9 +100,17 @@ struct PreflatePredictorState {
       const unsigned bestLen,
       const unsigned maxLen);
 
-  PreflateToken match(const unsigned hashHead, const unsigned prevLen = 0, const unsigned offset = 0, const bool fullSearch = false);
-  PreflateMatchInfo matchInfo(const unsigned hashHead, const PreflateToken& targetReference,
-                             const PreflateHashChainExt&);
+  PreflateToken match(
+      const unsigned hashHead, 
+      const unsigned prevLen, 
+      const unsigned offset, 
+      const bool veryFarMatches,
+      const bool matchesToStart,
+      const unsigned maxDepth);
+  unsigned short matchDepth(const unsigned hashHead, const PreflateToken& targetReference,
+                      const PreflateHashChainExt&);
+  PreflateNextMatchInfo nextMatchInfo(const unsigned hashHead, const PreflateToken& targetReference,
+                              const PreflateHashChainExt&);
   PreflateRematchInfo rematchInfo(const unsigned hashHead, const PreflateToken& targetReference);
   unsigned firstMatch(const unsigned len);
   unsigned hopMatch(const PreflateToken& token, const unsigned hops);

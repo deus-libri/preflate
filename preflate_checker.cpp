@@ -32,6 +32,7 @@ bool preflate_checker(const std::vector<unsigned char>& deflate_raw) {
   std::vector<unsigned char> unpacked_output;
   std::vector<PreflateTokenBlock> blocks;
   if (!preflate_unpack(unpacked_output, blocks, deflate_raw)) {
+    printf("inflating error (modified zlib)\n");
     return false;
   }
   printf("Unpacked data has size %d\n", unpacked_output.size());
@@ -50,6 +51,7 @@ bool preflate_checker(const std::vector<unsigned char>& deflate_raw) {
     PreflateTokenBlock newBlock;
     bool ok = bdec.readBlock(newBlock, last);
     if (!ok) {
+      printf("inflating error (preflate)\n");
       return false;
     }
     if ((last && i + 1 != blocks.size())
@@ -74,6 +76,12 @@ bool preflate_checker(const std::vector<unsigned char>& deflate_raw) {
 
   // Encode
   PreflateParameters paramsE = estimatePreflateParameters(unpacked_output, blocks);
+  printf("prediction parameters: w %d, c %d, m %d, zlib %d, farL3M %d, very far M %d, M2S %d, log2CD %d\n",
+         paramsE.windowBits, paramsE.compLevel, paramsE.memLevel,
+         paramsE.zlibCompatible, paramsE.farLen3MatchesDetected,
+         paramsE.veryFarMatchesDetected, paramsE.matchesToStartDetected,
+         paramsE.log2OfMaxChainDepthM1);
+
   PreflateStatisticalModel modelE;
   memset(&modelE, 0, sizeof(modelE));
   PreflateTokenPredictor tokenPredictorE(paramsE, unpacked_output);
@@ -146,8 +154,12 @@ bool preflate_checker(const std::vector<unsigned char>& deflate_raw) {
     printf("parameter decoding failed: compLevel mismatch\n");
     return false;
   }
-  if (paramsD.isCompLevelFallback != paramsE.isCompLevelFallback) {
-    printf("parameter decoding failed: memLevel mismatch\n");
+  if (paramsD.zlibCompatible != paramsE.zlibCompatible
+      || paramsD.farLen3MatchesDetected != paramsE.farLen3MatchesDetected
+      || paramsD.veryFarMatchesDetected != paramsE.veryFarMatchesDetected
+      || paramsD.matchesToStartDetected != paramsE.matchesToStartDetected
+      || paramsD.log2OfMaxChainDepthM1 != paramsE.log2OfMaxChainDepthM1) {
+    printf("parameter decoding failed: flag mismatch\n");
     return false;
   }
 

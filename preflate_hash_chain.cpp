@@ -44,6 +44,16 @@ PreflateHashChainExt::~PreflateHashChainExt() {
 }
 
 void PreflateHashChainExt::updateHash(const unsigned l) {
+  if (l > 0x180) {
+    unsigned l_ = l;
+    while (l_ > 0) {
+      unsigned blk = std::min(l_, 0x180u);
+      updateHash(blk);
+      l_ -= blk;
+    }
+    return;
+  }
+
   const unsigned char* b = _input.curChars();
   unsigned pos = _input.pos();
   if (pos - totalShift >= 0xfe08) {

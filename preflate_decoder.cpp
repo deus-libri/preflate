@@ -35,32 +35,23 @@ bool preflate_decode(std::vector<unsigned char>& unpacked_output,
   for (unsigned i = 0, n = blocks.size(); i < n; ++i) {
     tokenPredictor.analyzeBlock(i, blocks[i]);
     treePredictor.analyzeBlock(i, blocks[i]);
-//    printf("Block %d", i);
     if (tokenPredictor.predictionFailure || treePredictor.predictionFailure) {
       return false;
     }
     tokenPredictor.updateModel(&model, i);
     treePredictor.updateModel(&model, i);
-//    model.print();
   }
   PreflateStatisticalEncoder codec(model);
   codec.encodeHeader();
   codec.encodeParameters(params);
   codec.encodeModel();
-//    printf("model size %d\n", codec.data->getpos());
   for (unsigned i = 0, n = blocks.size(); i < n; ++i) {
-//      unsigned sz0 = codec.data->getpos();
     tokenPredictor.encodeBlock(&codec, i);
-//      unsigned sz1 = codec.data->getpos();
     treePredictor.encodeBlock(&codec, i);
     if (tokenPredictor.predictionFailure || treePredictor.predictionFailure) {
       return false;
     }
-//      printf("block: %d, tokens %d -> token sz %d, tree sz %d\n",
-//              i,
-//              dumper->getBlocks()[i]->tokens.size(),
-//              sz1 - sz0,
-//              codec.data->getpos() - sz1);
+    tokenPredictor.encodeEOF(&codec, i, i + 1 == blocks.size());
   }
   preflate_diff = codec.encodeFinish();
   return true;

@@ -64,6 +64,10 @@ bool HuffmanHelper::countSymbols(
     nextCode[i] = code;
   }
 
+  if (minLength == maxLength && blCount[maxLength] == 1) {
+    return true;
+  }
+
   // Check that we don't have holes
   return nextCode[maxLength] + blCount[maxLength] == (1 << (maxLength - 1));
 }

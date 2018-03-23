@@ -114,6 +114,9 @@ struct PreflateHashChainExt {
   void updateHash(const unsigned l);
   void updateHashLong(const unsigned l);
   void skipHash(const unsigned l);
+
+private:
+  void _updateHashSimple(const unsigned l);
 };
 
 #endif /* PREFLATE_HASH_CHAIN_H */

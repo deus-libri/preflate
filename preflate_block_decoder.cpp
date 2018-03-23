@@ -36,6 +36,10 @@ bool PreflateBlockDecoder::readBlock(PreflateTokenBlock &block, bool &last) {
   block.uncompressedStartPos = _output.cacheEndPos();
   int32_t earliest_reference = INT32_MAX, curPos = 0;
 
+  if (_input.eof()) {
+    return false;
+  }
+
   last = _readBit() != 0;
   unsigned char mode = _readBits(2);
   switch (mode) {
@@ -46,7 +50,7 @@ bool PreflateBlockDecoder::readBlock(PreflateTokenBlock &block, bool &last) {
     _skipToByte();
     size_t len = _readBits(16);
     size_t ilen = _readBits(16);
-    if (len ^ ilen != 0xffff) {
+    if ((len ^ ilen) != 0xffff) {
       return _error(STORED_BLOCK_LEN_MISMATCH);
     }
     block.uncompressedLen = len;
@@ -65,6 +69,9 @@ bool PreflateBlockDecoder::readBlock(PreflateTokenBlock &block, bool &last) {
       }
     }
     while (true) {
+      if (_input.eof()) {
+        return false;
+      }
       unsigned litLen = _litLenDecoder->decode(_input);
       if (litLen < 256) {
         _writeLiteral(litLen);

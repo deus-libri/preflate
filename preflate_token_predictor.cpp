@@ -27,6 +27,7 @@ PreflateTokenPredictor::PreflateTokenPredictor(
   , fast(params_.isFastCompressor())
   , predictionFailure(false)
   , prevLen(0)
+  , pendingToken(PreflateToken::NONE)
   , emptyBlockAtEnd(false) {
 
   if (state.availableInputSize() >= 2) {
@@ -49,17 +50,23 @@ void PreflateTokenPredictor::commitToken(const PreflateToken& t) {
 /* Matches of length 3 are discarded if their distance exceeds TOO_FAR */
 
 PreflateToken PreflateTokenPredictor::predictToken() {
-  //if (state.currentInputPos() == 0x5d42) {
-  //  puts("hi");
-  //}
-
   if (state.currentInputPos() == 0 || state.availableInputSize() < PreflateConstants::MIN_MATCH) {
     return PreflateToken(PreflateToken::LITERAL);
   }
   unsigned hash = state.calculateHash();
   unsigned head = state.getCurrentHashHead(hash);
-  PreflateToken match = state.match(head, prevLen, 0, params.isCompLevelFallback);
+  PreflateToken match(PreflateToken::NONE);
+  
+  if (pendingToken.len > 1) {
+    match = pendingToken;
+  } else {
+    match = state.match(head, prevLen, 0,
+                        params.veryFarMatchesDetected,
+                        params.matchesToStartDetected,
+                        params.zlibCompatible ? 0 : (1 << params.log2OfMaxChainDepthM1));
+  }
   prevLen = 0;
+  pendingToken = PreflateToken(PreflateToken::NONE);
   if (match.len < PreflateConstants::MIN_MATCH) {
     return PreflateToken(PreflateToken::LITERAL);
   }
@@ -73,7 +80,10 @@ PreflateToken PreflateTokenPredictor::predictToken() {
   if (match.len < state.lazyMatchLength() && state.availableInputSize() >= match.len + 2) {
     unsigned hashNext = state.calculateHashNext();
     unsigned headNext = state.getCurrentHashHead(hashNext);
-    PreflateToken matchNext = state.match(headNext, match.len, 1, params.isCompLevelFallback);
+    PreflateToken matchNext = state.match(headNext, match.len, 1, 
+                                          params.veryFarMatchesDetected,
+                                          params.matchesToStartDetected,
+                                          params.zlibCompatible ? 0 : (2 << params.log2OfMaxChainDepthM1));
     if (((hashNext ^ hash) & this->hash.hashMask) == 0) {
       unsigned maxSize = std::min(state.availableInputSize() - 1, (unsigned)PreflateConstants::MAX_MATCH);
       unsigned rle = 1;
@@ -89,8 +99,10 @@ PreflateToken PreflateTokenPredictor::predictToken() {
     }
     if (matchNext.len > match.len) {
       prevLen = match.len;
-      if (params.isCompLevelFallback) {
+      pendingToken = matchNext;
+      if (!params.zlibCompatible) {
         prevLen = 0;
+        pendingToken = PreflateToken(PreflateToken::NONE);
       }
       return PreflateToken(PreflateToken::LITERAL);
     }
@@ -104,7 +116,12 @@ bool PreflateTokenPredictor::repredictReference(PreflateToken& token) {
   }
   unsigned hash = state.calculateHash();
   unsigned head = state.getCurrentHashHead(hash);
-  PreflateToken match = state.match(head, prevLen, 0, true);
+  PreflateToken match = state.match(head, /*prevLen*/0, 0, 
+                                    params.veryFarMatchesDetected,
+                                    params.matchesToStartDetected,
+                                    (2 << params.log2OfMaxChainDepthM1));
+  prevLen = 0;
+  pendingToken = PreflateToken(PreflateToken::NONE);
   if (match.len < PreflateConstants::MIN_MATCH) {
     return false;
   }
@@ -130,6 +147,7 @@ void PreflateTokenPredictor::analyzeBlock(
     const PreflateTokenBlock& block) {
   currentTokenCount = 0;
   prevLen = 0;
+  pendingToken = PreflateToken(PreflateToken::NONE);
   if (blockno != analysisResults.size() || predictionFailure) {
     return;
   }
@@ -336,6 +354,7 @@ PreflateTokenBlock PreflateTokenPredictor::decodeBlock(
   PreflateTokenBlock block;
   currentTokenCount = 0;
   prevLen = 0;
+  pendingToken = PreflateToken(PreflateToken::NONE);
   unsigned blocksize = 0;
   bool checkEOB = true;
   unsigned bt = codec->decode(CORR_BLOCK_TYPE);

@@ -49,7 +49,8 @@ bool preflate_unpack(std::vector<unsigned char>& unpacked_output,
     inf.avail_out = tmp.size();
     inf.next_out = tmp.data();
     ret = inflate(&inf, Z_NO_FLUSH);
-    if (ret == Z_STREAM_ERROR || ret == Z_DATA_ERROR || ret == Z_NEED_DICT || ret == Z_MEM_ERROR) {
+    if (ret == Z_STREAM_ERROR || ret == Z_DATA_ERROR || ret == Z_NEED_DICT || ret == Z_MEM_ERROR
+        || ret == Z_BUF_ERROR) {
       return false;
     }
     dumper.uncompressed.insert(dumper.uncompressed.end(), tmp.begin(), tmp.end() - inf.avail_out);

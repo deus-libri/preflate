@@ -18,6 +18,7 @@
 #include "preflate_info.h"
 #include "preflate_parameter_estimator.h"
 #include "preflate_token_predictor.h"
+#include "support/bit_helper.h"
 
 unsigned char estimatePreflateMemLevel(const unsigned maxBlockSize_) {
   unsigned maxBlockSize = maxBlockSize_;
@@ -74,7 +75,10 @@ PreflateParameters estimatePreflateParameters(const std::vector<unsigned char>& 
   result.huffStrategy = estimatePreflateHuffStrategy(info);
   PreflateCompLevelInfo cl = estimatePreflateCompLevel(result.windowBits, result.memLevel, unpacked_output, blocks, false);
   result.compLevel    = cl.recommendedCompressionLevel;
-  result.isCompLevelFallback = cl.possibleCompressionLevels == 0
-                              || cl.unfoundReferences > 0;
+  result.zlibCompatible = cl.zlibCompatible;
+  result.farLen3MatchesDetected = cl.farLen3Matches;
+  result.veryFarMatchesDetected = cl.veryFarMatches;
+  result.matchesToStartDetected = cl.matchToStart;
+  result.log2OfMaxChainDepthM1 = cl.maxChainDepth == 0 ? 0 : bitLength(cl.maxChainDepth - 1);
   return result;
 }

@@ -15,6 +15,7 @@
 #ifndef BITSTREAM_H
 #define BITSTREAM_H
 
+#include <algorithm>
 #include "bit_helper.h"
 #include "stream.h"
 
@@ -23,6 +24,10 @@ class BitInputStream {
 public:
   BitInputStream(SeekableInputStream&);
 
+  bool eof() const {
+    return _eof && _bufPos == _bufSize && !_bitsRemaining;
+  }
+
   size_t peek(const unsigned n) {
     if (_bitsRemaining < n) {
       _fill();
@@ -30,7 +35,7 @@ public:
     return _bits & ((1 << n) - 1);
   }
   void skip(const unsigned n) {
-    _bitsRemaining -= n;
+    _bitsRemaining -= std::min(n, _bitsRemaining);
     _bits >>= n;
   }
   size_t get(const unsigned n) {
@@ -60,6 +65,7 @@ public:
   size_t copyBytesTo(OutputStream& output, const size_t len);
 
 private:
+  void _fillBytes();
   void _fill();
 
   enum { BUF_SIZE = 1024, PRE_BUF_EXTRA = 16, BITS = sizeof(size_t)*8 };

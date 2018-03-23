@@ -31,6 +31,7 @@ struct PreflateTokenPredictor {
   bool predictionFailure;
   bool                  fast;
   unsigned prevLen;
+  PreflateToken pendingToken;
   unsigned currentTokenCount;
   bool emptyBlockAtEnd;
 

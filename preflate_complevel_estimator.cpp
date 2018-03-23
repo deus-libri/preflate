@@ -13,6 +13,7 @@
    limitations under the License. */
 
 #include "preflate_complevel_estimator.h"
+#include "preflate_constants.h"
 #include <algorithm>
 
 PreflateCompLevelEstimatorState::PreflateCompLevelEstimatorState(
@@ -29,8 +30,6 @@ PreflateCompLevelEstimatorState::PreflateCompLevelEstimatorState(
 {
   memset(&info, 0, sizeof(info));
   info.possibleCompressionLevels = (1 << 10) - (1 << 1);
-  info.maxChainDepth = 0;
-  info.minNextChainDepth = ~0;
 }
 
 void PreflateCompLevelEstimatorState::updateHash(const unsigned len) {
@@ -73,13 +72,8 @@ bool PreflateCompLevelEstimatorState::checkMatchSingleFastHash(
     const PreflateHashChainExt& hash, 
     const PreflateParserConfig& config,
     const unsigned hashHead) {
-  PreflateMatchInfo minfo;
-  minfo = predictor.matchInfo(hash.getHead(hashHead), token, hash);
-  if (minfo.chainDepth > config.max_chain) {
-    return false;
-  }
-  if (token.len < config.nice_length
-      && minfo.nextChainDepth < config.max_chain) {
+  unsigned mdepth = predictor.matchDepth(hash.getHead(hashHead), token, hash);
+  if (mdepth > config.max_chain) {
     return false;
   }
   return true;
@@ -104,29 +98,31 @@ void PreflateCompLevelEstimatorState::checkMatch(const PreflateToken& token) {
 
   info.referenceCount++;
 
-  PreflateMatchInfo minfo;
-  minfo = predictor.matchInfo(slowHash.getHead(hashHead), token, slowHash);
-  const PreflateParserConfig& config_ = slowPreflateParserSettings[5];
-  if (minfo.chainDepth > config_.max_chain) {
+  unsigned short mdepth = predictor.matchDepth(slowHash.getHead(hashHead), token, slowHash);
+  if (mdepth >= 0x8001) {
     info.unfoundReferences++;
-    info.possibleCompressionLevels &= ~((1 << 10) - (1 << 4));
   } else {
-    info.maxChainDepth = std::max(info.maxChainDepth, minfo.chainDepth);
-    info.minNextChainDepth = std::min(info.minNextChainDepth, minfo.nextChainDepth);
-
-    if (info.possibleCompressionLevels & ((1 << 10) - (1 << 4))) {
-      for (unsigned i = 0; i < 6; ++i) {
-        if (!(info.possibleCompressionLevels & (1 << (4 + i)))) {
-          continue;
-        }
-        const PreflateParserConfig& config = slowPreflateParserSettings[i];
-        if (minfo.chainDepth > config.max_chain) {
-          info.possibleCompressionLevels &= ~(1 << (4 + i));
-        }
-        if (token.len < config.nice_length
-            && minfo.nextChainDepth < (config.max_chain >> 2)) {
-          info.possibleCompressionLevels &= ~(1 << (4 + i));
-        }
+    info.maxChainDepth = std::max(info.maxChainDepth, mdepth);
+  }
+  if (token.dist == predictor.currentInputPos()) {
+    info.matchToStart = true;
+  }
+  if (mdepth == 0) {
+    info.longestDistAtHop0 = std::max(info.longestDistAtHop0, token.dist);
+  } else {
+    info.longestDistAtHop1Plus = std::max(info.longestDistAtHop1Plus, token.dist);
+  }
+  if (token.len == 3) {
+    info.longestLen3Dist = std::max(info.longestLen3Dist, token.dist);
+  }
+  if (info.possibleCompressionLevels & ((1 << 10) - (1 << 4))) {
+    for (unsigned i = 0; i < 6; ++i) {
+      if (!(info.possibleCompressionLevels & (1 << (4 + i)))) {
+        continue;
+      }
+      const PreflateParserConfig& config = slowPreflateParserSettings[i];
+      if (mdepth > config.max_chain) {
+        info.possibleCompressionLevels &= ~(1 << (4 + i));
       }
     }
   }
@@ -155,10 +151,19 @@ void PreflateCompLevelEstimatorState::checkDump(bool early_out) {
 }
 void PreflateCompLevelEstimatorState::recommend() {
   info.recommendedCompressionLevel = 9;
+  info.veryFarMatches = !(info.longestDistAtHop0 <= predictor.windowSize() - PreflateConstants::MIN_LOOKAHEAD
+                          && info.longestDistAtHop1Plus < predictor.windowSize() - PreflateConstants::MIN_LOOKAHEAD);
+  info.farLen3Matches = info.longestLen3Dist > 4096;
+
+  info.zlibCompatible = info.possibleCompressionLevels > 1
+                        && !info.matchToStart
+                        && !info.veryFarMatches
+                        && (!info.farLen3Matches || (info.possibleCompressionLevels & 0xe) != 0);
   if (info.unfoundReferences) {
     return;
   }
-  if (info.possibleCompressionLevels > 1) {
+
+  if (info.zlibCompatible && info.possibleCompressionLevels > 1) {
     unsigned l = info.possibleCompressionLevels >> 1;
     info.recommendedCompressionLevel = 1;
     while ((l & 1) == 0) {

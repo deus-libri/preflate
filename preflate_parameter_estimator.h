@@ -67,10 +67,24 @@ enum PreflateHuffStrategy {
 struct PreflateParameters {
   PreflateStrategy strategy;
   PreflateHuffStrategy huffStrategy;
+  bool zlibCompatible;
   unsigned char windowBits;
   unsigned char memLevel;
   unsigned char compLevel;
-  bool isCompLevelFallback;
+  // true if matches of len 3 with a distance > 4096 are allowed
+  // (disallowed by zlib level 4+)
+  bool farLen3MatchesDetected; 
+  // true if matches of distance >= 32768 - (MAX_MATCH + MIN_MATCH + 1) are allowed
+  // or > 32768 - (MAX_MATCH + MIN_MATCH + 1) if it's the first node in the hash chain
+  // (disallowed by zlib)
+  bool veryFarMatchesDetected;
+  // true if matches to start of stream are allowed
+  // (disallowed by zlib)
+  bool matchesToStartDetected;
+  // log2 of maximal found chain depth - 1
+  // so, 9 to 16 have value 3
+  unsigned char log2OfMaxChainDepthM1;
+
 
   bool isFastCompressor() const {
     return compLevel >= 1 && compLevel <= 3;

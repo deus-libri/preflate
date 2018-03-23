@@ -26,7 +26,7 @@ BitInputStream::BitInputStream(SeekableInputStream& is)
   , _eof(false)
 {}
 
-void BitInputStream::_fill() {
+void BitInputStream::_fillBytes() {
   // free space in bit buffer
   if (_bufPos >= _bufFastLimit) {
     if (!_eof) {
@@ -37,6 +37,14 @@ void BitInputStream::_fill() {
       _bufSize = PRE_BUF_EXTRA + _input.read(_buffer + PRE_BUF_EXTRA, BUF_SIZE);
       _bufFastLimit = std::max(_bufPos, _bufSize - PRE_BUF_EXTRA);
       _eof = _bufSize != PRE_BUF_EXTRA + BUF_SIZE;
+    }
+  }
+}
+void BitInputStream::_fill() {
+  // free space in bit buffer
+  if (_bufPos >= _bufFastLimit) {
+    if (!_eof) {
+      _fillBytes();
     }
     while (_bitsRemaining <= BITS - 8 && _bufPos < _bufSize) {
       _bits |= ((size_t)_buffer[_bufPos++]) << _bitsRemaining;
@@ -57,7 +65,7 @@ size_t BitInputStream::copyBytesTo(OutputStream& output, const size_t len) {
   size_t l = 0;
   while (_bitsRemaining > 0 && l < len) {
     a[l++] = _bits & 0xff;
-    _bitsRemaining += 8;
+    _bitsRemaining -= 8;
     _bits >>= 8;
   }
   size_t w = output.write(a, l);
@@ -72,8 +80,9 @@ size_t BitInputStream::copyBytesTo(OutputStream& output, const size_t len) {
     if (w != todo) {
       return l;
     }
-    _fill();
+    _fillBytes();
   }
+  return l;
 }
 
 BitOutputStream::BitOutputStream(OutputStream& output)

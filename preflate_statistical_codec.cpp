@@ -609,12 +609,16 @@ void PreflateStatisticalEncoder::encodeHeader() {
 }
 
 void PreflateStatisticalEncoder::encodeParameters(const PreflateParameters& params) {
-  encodeValue(params.compLevel, 4);
+  encodeValue(params.zlibCompatible, 1);
+  encodeValue(params.windowBits - 8, 3);
   encodeValue(params.memLevel, 4);
+  encodeValue(params.compLevel, 4);
   encodeValue(params.strategy, 2);
   encodeValue(params.huffStrategy, 2);
-  encodeValue(params.windowBits - 8, 3);
-  encodeValue(params.isCompLevelFallback, 1);
+  encodeValue(params.farLen3MatchesDetected, 1);
+  encodeValue(params.veryFarMatchesDetected, 1);
+  encodeValue(params.matchesToStartDetected, 1);
+  encodeValue(params.log2OfMaxChainDepthM1, 4);
 }
 std::vector<unsigned char>  PreflateStatisticalEncoder::encodeFinish() {
   delete codec;
@@ -652,8 +656,11 @@ bool PreflateStatisticalDecoder::decodeHeader() {
   return true;
 }
 bool PreflateStatisticalDecoder::decodeParameters(PreflateParameters& params) {
-  params.compLevel = decodeValue(4);
+  params.zlibCompatible = decodeValue(1) != 0;
+  params.windowBits = decodeValue(3) + 8;
   params.memLevel = decodeValue(4);
+  params.compLevel = decodeValue(4);
+
   unsigned n = decodeValue(2);
   switch (n) {
   case PREFLATE_DEFAULT:
@@ -681,11 +688,13 @@ bool PreflateStatisticalDecoder::decodeParameters(PreflateParameters& params) {
     params.huffStrategy = PREFLATE_HUFF_STATIC;
     break;
   }
-  params.windowBits = decodeValue(3) + 8;
-  params.isCompLevelFallback = decodeValue(1);
+  params.farLen3MatchesDetected = decodeValue(1) != 0;
+  params.veryFarMatchesDetected = decodeValue(1) != 0;
+  params.matchesToStartDetected = decodeValue(1) != 0;
+  params.log2OfMaxChainDepthM1 = decodeValue(4);
   return params.compLevel >= 1 && params.compLevel <= 9
     && params.memLevel >= 1 && params.memLevel <= 9
-    && params.windowBits >= 9 && params.windowBits <= 15;
+    && params.windowBits >= 8 && params.windowBits <= 15;
 }
 void PreflateStatisticalDecoder::decodeFinish() {
   delete codec;
