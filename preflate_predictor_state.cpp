@@ -22,9 +22,9 @@ PreflatePredictorState::PreflatePredictorState(
     const int wbits, 
     const int mbits) 
   : hash(hash_)
-  , config(config_)
   , windowBytes(1 << wbits)
-  , maxTokenCount((1 << (6 + mbits)) - 1) {
+  , maxTokenCount((1 << (6 + mbits)) - 1)
+  , config(config_) {
 }
 
 /* deflate has four parameters:
@@ -165,7 +165,7 @@ PreflateNextMatchInfo PreflatePredictorState::nextMatchInfo(
   const PreflateToken& targetReference,
   const PreflateHashChainExt& hash) {
   PreflateNextMatchInfo result;
-  result.nextChainDepth = ~0u;
+  result.nextChainDepth = (unsigned short)~0u;
   result.nextLen = 0;
   result.nextDist = 0xffff;
   unsigned maxLen = std::min(availableInputSize(), (unsigned)PreflateConstants::MAX_MATCH);

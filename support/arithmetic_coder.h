@@ -16,6 +16,7 @@
 #define ARITHMETIC_CODER_H
 
 #include <stdint.h>
+#include <string.h>
 #include "bitstream.h"
 #include "const_division.h"
 
@@ -90,7 +91,7 @@ private:
   unsigned _findIndex(const unsigned bounds[],
                       const unsigned N,
                       const unsigned val) {
-    for (int i = 0; i < N; ++i) {
+    for (unsigned i = 0; i < N; ++i) {
       if (val < bounds[i + 1]) {
         return i;
       }
@@ -154,14 +155,14 @@ struct ACModelBase {
 struct ACFixedScaleBinaryModel : public ACModelBase<2> {
   ACFixedScaleBinaryModel() {}
   ACFixedScaleBinaryModel(const unsigned(&arr)[2]) {
-    memcpy(bounds, arr, sizeof(arr));
+    memcpy(this->bounds, arr, sizeof(arr));
     build();
   }
   void build();
   void encode(ArithmeticEncoder* encoder, const unsigned item) {
-    if (!_fixed) {
-      unsigned pos = rids[item];
-      encoder->encodeShiftScale(16, bounds[pos], bounds[pos + 1]);
+    if (!this->_fixed) {
+      unsigned pos = this->rids[item];
+      encoder->encodeShiftScale(16, this->bounds[pos], this->bounds[pos + 1]);
     }
   }
 #if 0
@@ -181,24 +182,25 @@ struct ACFixedScaleBinaryModel : public ACModelBase<2> {
   }
 #endif
 };
+
 template <unsigned N>
 struct ACFixedScaleModel : public ACModelBase<N> {
   ACFixedScaleModel() {}
   ACFixedScaleModel(const unsigned(&arr)[N]) {
-    memcpy(bounds, arr, sizeof(arr));
+    memcpy(this->bounds, arr, sizeof(arr));
     build();
   }
   void build() {
     unsigned backup[N];
-    if (!(_fixed = modelCheckFixed(bounds, ids, rids, N))) {
-      modelSortBounds(bounds, ids, rids, backup, N);
-      modelRecreateBounds(bounds, N);
+    if (!(this->_fixed = modelCheckFixed(this->bounds, this->ids, this->rids, N))) {
+      modelSortBounds(this->bounds, this->ids, this->rids, backup, N);
+      modelRecreateBounds(this->bounds, N);
     }
   }
   void encode(ArithmeticEncoder* encoder, const unsigned item) {
-    if (!_fixed) {
-      unsigned pos = rids[item];
-      encoder->encodeShiftScale(16, bounds[pos], bounds[pos + 1]);
+    if (!this->_fixed) {
+      unsigned pos =this->rids[item];
+      encoder->encodeShiftScale(16, this->bounds[pos], this->bounds[pos + 1]);
     }
   }
 #if 0
@@ -211,7 +213,7 @@ struct ACFixedScaleModel : public ACModelBase<N> {
         s.low_count = bounds[i];
         s.high_count = bounds[i + 1];
         codec->decode(&s);
-        return ids[i];
+        return this->ids[i];
       }
     }
     return 0;

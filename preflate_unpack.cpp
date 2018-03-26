@@ -12,6 +12,7 @@
    See the License for the specific language governing permissions and
    limitations under the License. */
 
+#include <stdlib.h>
 #include "preflate_dumper.h"
 #include "preflate_unpack.h"
 #include "zlib1.2.11.dec/zlib.h"

@@ -100,6 +100,7 @@ bool HuffmanDecoder::_constructTables(
       code += 1 << k;
     } while (code < t->lookup.size());
   }
+  return true;
 }
 void HuffmanDecoder::_constructErrorTable() {
   _error = true;

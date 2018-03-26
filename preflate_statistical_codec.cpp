@@ -13,6 +13,7 @@
    limitations under the License. */
 
 #include <algorithm>
+#include <string.h>
 #include "preflate_parameter_estimator.h"
 #include "preflate_statistical_codec.h"
 #include "preflate_statistical_model.h"
@@ -119,9 +120,9 @@ struct PreflateCodecCorrectionSubModel {
   static const unsigned L = N;
   PreflateCodecCorrectionSubModel(const unsigned(&arr1)[N + zero],
                         const unsigned(&arr2)[N]) 
-    : pos() 
-    , neg(arr2)
-    , sign() {
+    : sign()
+    , pos() 
+    , neg(arr2) {
     memcpy(pos.bounds, arr1 + zero, N * sizeof(unsigned));
     pos.build();
 
@@ -144,7 +145,7 @@ struct PreflateCodecCorrectionSubModel {
     }
     if (value > 0) {
       sign.encode(codec, 0);
-      if (value >= N) {
+      if (value >= (int)N) {
         pos.encode(codec, N - 1);
         PreflateStatisticalEncoder::encodeValue(codec, value - N, bitLength(maxvalue - N - refvalue));
       } else {
@@ -152,7 +153,7 @@ struct PreflateCodecCorrectionSubModel {
       }
     } else {
       sign.encode(codec, 1 + zero);
-      if (value <= -N) {
+      if (value <= -(int)N) {
         neg.encode(codec, N - 1);
         PreflateStatisticalEncoder::encodeValue(codec, -value - N, bitLength(refvalue - N - minvalue));
       } else {
@@ -170,14 +171,14 @@ struct PreflateCodecCorrectionSubModel {
     }
     if (val == 0) {
       val = pos.decode(codec);
-      if (val >= N - 1) {
+      if (val >= (int)(N - 1)) {
         return PreflateStatisticalDecoder::decodeValue(codec, bitLength(maxvalue - N - refvalue)) + N;
       } else {
         return val + 1;
       }
     } else {
       val = neg.decode(codec);
-      if (val >= (N - 1)) {
+      if (val >= (int)(N - 1)) {
         return -PreflateStatisticalDecoder::decodeValue(codec, bitLength(refvalue - N - minvalue)) - N;
       } else {
         return -val - 1;
@@ -309,7 +310,7 @@ void PreflateStatisticalEncoder::encode(const PreflateCorrectionType& type, cons
     model->LENCorrection.encode(codec, value, refvalue, 3, 258);
     break;
   case CORR_DIST_AFTER_LEN_CORRECTION:
-    if (value >= model->DISTAfterLenCorrection.L - 1) {
+    if (value >= (int)model->DISTAfterLenCorrection.L - 1) {
       model->DISTAfterLenCorrection.encode(codec, model->DISTAfterLenCorrection.L - 1);
       encodeValue(value - (model->DISTAfterLenCorrection.L - 1), 15);
     } else {
@@ -321,7 +322,7 @@ void PreflateStatisticalEncoder::encode(const PreflateCorrectionType& type, cons
     model->DISTOnlyMisprediction.encode(codec, value);
     break;
   case CORR_DIST_ONLY_CORRECTION:
-    if (value >= model->DISTOnlyCorrection.L - 1) {
+    if (value >= (int)model->DISTOnlyCorrection.L - 1) {
       model->DISTOnlyCorrection.encode(codec, model->DISTOnlyCorrection.L - 1);
       encodeValue(value - (model->DISTOnlyCorrection.L - 1), 15);
     } else {

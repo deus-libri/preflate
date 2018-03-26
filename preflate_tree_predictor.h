@@ -17,6 +17,7 @@
 
 #include <vector>
 
+#include "preflate_constants.h"
 #include "preflate_input.h"
 #include "preflate_parameter_estimator.h"
 
@@ -52,8 +53,8 @@ struct PreflateTreePredictor {
       unsigned char bitLengths[],
       unsigned Dcodes[]);
   unsigned buildTCBitlengths(
-      unsigned char bitLengths[],
-      unsigned BLfreqs[]);
+      unsigned char (&bitLengths)[PreflateConstants::BL_CODES],
+      unsigned (&BLfreqs)[PreflateConstants::BL_CODES]);
 
 
   unsigned calcBitLengths(unsigned char* symBitLen,

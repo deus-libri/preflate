@@ -23,7 +23,7 @@ void printFlagStatistics(const char *txt, unsigned(&flag)[2]) {
 }
 void printArrayStatistics(const char *txt, const char* txt2, unsigned data[], unsigned size, unsigned sum, int offset) {
   bool on = false;
-  for (int i = 0; i < size; ++i) {
+  for (unsigned i = 0; i < size; ++i) {
     if (data[i]) {
       on = true;
       if (i + 1 == size && txt2) {

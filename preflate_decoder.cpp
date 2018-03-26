@@ -12,6 +12,7 @@
    See the License for the specific language governing permissions and
    limitations under the License. */
 
+#include <string.h>
 #include "preflate_decoder.h"
 #include "preflate_parameter_estimator.h"
 #include "preflate_statistical_model.h"

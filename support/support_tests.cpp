@@ -12,6 +12,7 @@
    See the License for the specific language governing permissions and
    limitations under the License. */
 
+#include <stdio.h>
 #include "array_helper.h"
 #include "bit_helper.h"
 #include "bitstream.h"
@@ -27,42 +28,52 @@ bool support_self_tests() {
   unsigned arr[] = {1,2,3,4,5};
   if (sumArray(arr) != 15
       || sumArray(arr, sizeof(arr) / sizeof(arr[0])) != 15) {
+    printf("sumArray failed\n");
     return false;
   }
   if (bitLength(0) != 0 
       || bitLength(15) != 4
       || bitLength(0xffffffff) != 32) {
+    printf("bitLength failed\n");
     return false;
   }
   if (bitReverse(1, 3) != 4
       || bitReverse(0x12345678, 32) != 0x1e6a2c48
       || bitReverse(0xfedcba90, 32) != 0x095d3b7f) {
+    printf("bitReverse failed\n");
     return false;
   }
 
   MemStream mem;
   mem.write((const uint8_t*)"Hello", 5);
   if (mem.tell() != 5 || !mem.eof()) {
+    printf("MemStream/1 failed\n");
     return false;
   }
   mem.write((const uint8_t*)"!", 1);
   uint8_t tmp[5], tmp2[2];
   if (mem.read(tmp, 5) != 0) {
+    printf("MemStream/2 failed\n");
     return false;
   }
   if (mem.seek(0) != 6) {
+    printf("MemStream/3 failed\n");
     return false;
   }
   if (mem.tell() != 0) {
+    printf("MemStream/4 failed\n");
     return false;
   }
   if (mem.read(tmp, 5) != 5 || tmp[0] != 'H' || tmp[4] != 'o') {
+    printf("MemStream/5 failed\n");
     return false;
   }
   if (mem.read(tmp2, 2) != 1 || tmp2[0] != '!') {
+    printf("MemStream/6 failed\n");
     return false;
   }
   if (!mem.eof()) {
+    printf("MemStream/7 failed\n");
     return false;
   }
 
@@ -79,7 +90,8 @@ bool support_self_tests() {
     BitInputStream bis(mem);
     for (unsigned i = 0; i <= HuffmanHelper::MAX_BL; ++i) {
       if (bis.get(i) != i) {
-        return false;
+       printf("BitStreams failed\n");
+       return false;
       }
     }
   }
@@ -92,6 +104,7 @@ bool support_self_tests() {
   HuffmanEncoder henc(lengths, count, false);
   HuffmanDecoder hdec(lengths, count, false, 7);
   if (henc.error() || hdec.error()) {
+    printf("HuffmanEncoder failed\n");
     return false;
   }
   mem.seek(0);
@@ -107,6 +120,7 @@ bool support_self_tests() {
     BitInputStream bis(mem);
     for (unsigned i = 0; i < count; ++i) {
       if (hdec.decode(bis) != i) {
+        printf("HuffmanDecoder failed\n");
         return false;
       }
     }
@@ -124,6 +138,7 @@ bool support_self_tests() {
       uint16_t c2 = divide((uint16_t)k, duc);
       uint16_t r = k / divtest16[i];
       if (c1 != r || c2 != r) {
+        printf("16bit divider/1 failed\n");
         return false;
       }
 
@@ -131,6 +146,7 @@ bool support_self_tests() {
       int16_t d2 = divide((int16_t)(k - 32768), dsc);
       int16_t s = ((int16_t)(k - 32768)) / (int16_t)divtest16[i];
       if (d1 != s || d2 != s) {
+        printf("16bit divider/2 failed\n");
         return false;
       }
     }
@@ -143,10 +159,11 @@ bool support_self_tests() {
     scdivider_t<32> dsc = build_scdivider_32(divtest32[i]);
 
     for (int k = 0; k < 65536; ++k) {
-      uint32_t c1 = divide((uint32_t)(k * 65536), du);
-      uint32_t c2 = divide((uint32_t)(k * 65536), duc);
-      uint32_t r = ((uint32_t)(k * 65536)) / divtest32[i];
+      uint32_t c1 = divide(((uint32_t)k)* 65536, du);
+      uint32_t c2 = divide(((uint32_t)k) * 65536, duc);
+      uint32_t r = (((uint32_t)k) * 65536) / divtest32[i];
       if (c1 != r || c2 != r) {
+        printf("32bit divider/1 failed\n");
         return false;
       }
 
@@ -154,6 +171,7 @@ bool support_self_tests() {
       int32_t d2 = divide((int32_t)(k - 32768) * 65536, dsc);
       int32_t s = ((int32_t)(k - 32768)) * 65536 / (int32_t)divtest32[i];
       if (d1 != s || d2 != s) {
+        printf("32bit divider/2 failed\n");
         return false;
       }
     }

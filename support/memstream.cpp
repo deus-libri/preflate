@@ -13,12 +13,13 @@
    limitations under the License. */
 
 #include <algorithm>
+#include <string.h>
 #include "memstream.h"
 
 MemStream::MemStream() : _pos(0) {}
 MemStream::MemStream(const std::vector<uint8_t>& content)
-  : _pos(0)
-  , _data(content) {}
+  : _data(content)
+  , _pos(0) {}
 
 bool MemStream::eof() const {
   return _pos == _data.size();

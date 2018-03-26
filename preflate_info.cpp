@@ -12,9 +12,9 @@
    See the License for the specific language governing permissions and
    limitations under the License. */
 
-#include "preflate_info.h"
-
 #include <algorithm>
+#include <string.h>
+#include "preflate_info.h"
 
 // -----------------------------------------
 

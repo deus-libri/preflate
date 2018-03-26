@@ -76,10 +76,9 @@ It just isn't stable and fast enough yet to be of practical use.
 
 How do I build it?
 ------------------
-Right now, there is no makefile. I THINK, that a C++11 capable compiler should be enough
-(I was using MSVC17 Community Edition) to compile all sources if the include directories
-are set via "-I DIR". If that is not enough, and you don't manage to fix it yourself,
-wait for the next update. Sorry.
+There is a make file, but it has only been tested so far with MinGW gmake.
+The produced executable is larger than 1MiB, while the MSVC compiler generated
+executables were around 100KiB. The reason for that is unclear at the moment.
 
 
 Credits

@@ -13,6 +13,7 @@
    limitations under the License. */
 
 #include <algorithm>
+#include <string.h>
 #include "huffman_helper.h"
 #include "bit_helper.h"
 
@@ -69,5 +70,5 @@ bool HuffmanHelper::countSymbols(
   }
 
   // Check that we don't have holes
-  return nextCode[maxLength] + blCount[maxLength] == (1 << (maxLength - 1));
+  return nextCode[maxLength] + blCount[maxLength] == (unsigned)(1 << (maxLength - 1));
 }

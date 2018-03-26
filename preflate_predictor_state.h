@@ -42,7 +42,7 @@ struct PreflateRematchInfo {
 struct PreflatePredictorState {
   const PreflateHashChainExt&    hash;
   unsigned short windowBytes;
-  int maxTokenCount;
+  unsigned maxTokenCount;
   const PreflateParserConfig& config;
 
   PreflatePredictorState(const PreflateHashChainExt&,

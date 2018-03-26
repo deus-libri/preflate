@@ -13,6 +13,7 @@
    limitations under the License. */
 
 #include <algorithm>
+#include <string.h>
 #include "preflate_block_reencoder.h"
 #include "preflate_block_trees.h"
 #include "support/bit_helper.h"
@@ -40,7 +41,7 @@ void PreflateBlockReencoder::_setupStaticTables() {
 
 bool PreflateBlockReencoder::_buildAndWriteDynamicTables(const PreflateTokenBlock& block) {
   if (block.ncode < 4 || block.ncode > PreflateConstants::BL_CODES
-      || block.treecodes.size() < block.ncode
+      || block.treecodes.size() < (size_t)block.ncode
       || block.nlen < PreflateConstants::LITERALS + 1
       || block.nlen > PreflateConstants::L_CODES
       || block.ndist < 1 || block.ndist > PreflateConstants::D_CODES) {

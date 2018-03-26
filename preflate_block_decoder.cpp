@@ -13,6 +13,7 @@
    limitations under the License. */
 
 #include <algorithm>
+#include <string.h>
 #include "preflate_block_decoder.h"
 #include "preflate_block_trees.h"
 #include "support/bit_helper.h"
@@ -135,7 +136,6 @@ bool PreflateBlockDecoder::_readDynamicTables(PreflateTokenBlock& block) {
   }
   for (unsigned i = 0, n = block.nlen + block.ndist; i < n; ++i) {
     unsigned char code = tcTree.decode(_input);
-    unsigned char len, tocopy;
     if (code > 18) {
       return false;
     }
@@ -144,6 +144,7 @@ bool PreflateBlockDecoder::_readDynamicTables(PreflateTokenBlock& block) {
       ldBitLengths[i] = code;
       continue;
     }
+    unsigned char len = 0, tocopy = 0;
     switch (code) {
     case 16:
       if (i == 0) {

@@ -118,6 +118,7 @@ divide_template(const typename divider_int_t<N1>::type dividend,
                 const scdivider_t<N2>& divisor) {
   typedef typename divider_uint_t<N1 * 2>::type T1;
   typedef typename divider_uint_t<N1>::type T2;
+  
   T2 s = dividend < 0 ? -1 : 0;
   T1 t = ((T1)(T2)((dividend ^ s) - s)) * divisor.magic
         + (divisor.ctrl & 0x80 ? divisor.magic : 0);

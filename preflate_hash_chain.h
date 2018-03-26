@@ -35,8 +35,8 @@ struct PreflateHashIterator {
     : chain(chain_)
     , chainDepth(depth_)
     , refPos(refPos_)
-    , curPos(startPos_)
     , maxDist(maxDist_)
+    , curPos(startPos_)
     , curDist(dist(refPos_, startPos_)) {
     isValid = curDist <= maxDist;
   }

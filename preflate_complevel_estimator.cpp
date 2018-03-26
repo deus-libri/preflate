@@ -12,21 +12,22 @@
    See the License for the specific language governing permissions and
    limitations under the License. */
 
+#include <algorithm>
+#include <string.h>
 #include "preflate_complevel_estimator.h"
 #include "preflate_constants.h"
-#include <algorithm>
 
 PreflateCompLevelEstimatorState::PreflateCompLevelEstimatorState(
     const int wbits,
     const int mbits,
     const std::vector<unsigned char>& unpacked_output_,
     const std::vector<PreflateTokenBlock>& blocks_)
-  : blocks(blocks_)
-  , predictor(slowHash, slowPreflateParserSettings[5], wbits, mbits)
+  : predictor(slowHash, slowPreflateParserSettings[5], wbits, mbits)
   , slowHash(unpacked_output_, mbits)
   , fastL1Hash(unpacked_output_, mbits)
   , fastL2Hash(unpacked_output_, mbits)
   , fastL3Hash(unpacked_output_, mbits)
+  , blocks(blocks_)
 {
   memset(&info, 0, sizeof(info));
   info.possibleCompressionLevels = (1 << 10) - (1 << 1);

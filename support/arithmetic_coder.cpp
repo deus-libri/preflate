@@ -79,9 +79,9 @@ void ArithmeticEncoder::_normalize() {
 
 ArithmeticDecoder::ArithmeticDecoder(BitInputStream& bis) 
   : _bis(bis)
+  , _value(0)
   , _low(0)
-  , _high(0x7fffffff)
-  , _value(0) {
+  , _high(0x7fffffff) {
   _value = _bis.getReverse(16) << 15;
   _value |= _bis.getReverse(15);
 }
@@ -91,7 +91,7 @@ void ArithmeticDecoder::_normalize() {
   // or _high features 0 bits
   uint32_t lh = ~_low & _high;
   if ((lh & 0x40000000) == 0) {
-    unsigned w = (_low & 0x40000000) != 0;
+    //unsigned w = (_low & 0x40000000) != 0;
     if ((lh & 0x20000000) == 0) {
       unsigned l = bitLeadingZeroes((lh << 2) + 3);
       _low = (_low << (l + 1)) & 0x7fffffff;

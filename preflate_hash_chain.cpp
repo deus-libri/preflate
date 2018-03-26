@@ -13,9 +13,9 @@
    limitations under the License. */
 
 #include <algorithm>
+#include <string.h>
 #include "preflate_constants.h"
 #include "preflate_hash_chain.h"
-#include "memory.h"
 
 PreflateHashChainExt::PreflateHashChainExt(
     const std::vector<unsigned char>& input_,

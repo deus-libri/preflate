@@ -24,8 +24,8 @@ PreflateTokenPredictor::PreflateTokenPredictor(
   : state(hash, params_.config(), params_.windowBits, params_.memLevel)
   , hash(dump, params_.memLevel)
   , params(params_)
-  , fast(params_.isFastCompressor())
   , predictionFailure(false)
+  , fast(params_.isFastCompressor())
   , prevLen(0)
   , pendingToken(PreflateToken::NONE)
   , emptyBlockAtEnd(false) {
@@ -77,7 +77,7 @@ PreflateToken PreflateTokenPredictor::predictToken() {
     return PreflateToken(PreflateToken::LITERAL);
   }
 
-  if (match.len < state.lazyMatchLength() && state.availableInputSize() >= match.len + 2) {
+  if (match.len < state.lazyMatchLength() && state.availableInputSize() >= (unsigned)match.len + 2) {
     unsigned hashNext = state.calculateHashNext();
     unsigned headNext = state.getCurrentHashHead(hashNext);
     PreflateToken matchNext = state.match(headNext, match.len, 1, 
@@ -136,10 +136,6 @@ PreflateRematchInfo PreflateTokenPredictor::repredictMatch(const PreflateToken& 
 }
 unsigned PreflateTokenPredictor::recalculateDistance(const PreflateToken& token, const unsigned hops) {
   return state.hopMatch(token, hops);
-}
-
-static unsigned diff(const unsigned v1, const unsigned v2) {
-  return v1 > v2 ? v1 - v2 : v2 - v1;
 }
 
 void PreflateTokenPredictor::analyzeBlock(
@@ -330,7 +326,7 @@ void PreflateTokenPredictor::updateModel(
     }
     model->LENMisprediction[(info & 4) != 0]++;
     if (info & 4) {
-      int pred = analysis.correctives[correctivePos++];
+      /*int pred = analysis.correctives[*/correctivePos++/*]*/;
       int diff = analysis.correctives[correctivePos++];
       int hops = analysis.correctives[correctivePos++];
       if (diff > 0) {

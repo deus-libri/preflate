@@ -18,12 +18,12 @@
 
 BitInputStream::BitInputStream(SeekableInputStream& is)
   : _input(is)
-  , _bits(0)
-  , _bitsRemaining(0)
   , _bufPos(0)
   , _bufSize(0)
   , _bufFastLimit(0)
   , _eof(false)
+  , _bits(0)
+  , _bitsRemaining(0)
 {}
 
 void BitInputStream::_fillBytes() {
@@ -87,9 +87,9 @@ size_t BitInputStream::copyBytesTo(OutputStream& output, const size_t len) {
 
 BitOutputStream::BitOutputStream(OutputStream& output)
   : _output(output)
+  , _bufPos(0)
   , _bits(0)
-  , _bitPos(0)
-  , _bufPos(0) {}
+  , _bitPos(0) {}
 
 void BitOutputStream::_flush() {
   while (_bitPos >= 8) {

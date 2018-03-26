@@ -15,6 +15,9 @@
 #include <algorithm>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string>
+#include <string.h>
+#include <vector>
 
 #include "preflate_checker.h"
 #include "preflate_decoder.h"
@@ -82,7 +85,7 @@ int split(const char* const * const fns, const unsigned fncnt) {
         savefile(unpacked, std::string(fns[i]) + ".u");
         savefile(recon, std::string(fns[i]) + ".r");
         printf("splitting %s successful (%d -> %d + %d)\n", 
-               fns[i], content.size(), unpacked.size(), recon.size());
+               fns[i], (int)content.size(), (int)unpacked.size(), (int)recon.size());
       } else {
         printf("splitting %s failed\n", fns[i]);
       }
@@ -109,7 +112,7 @@ int combine(const char* const * const fns, const unsigned fncnt, const std::stri
       if (check_ok) {
         savefile(content, std::string(fns[i]) + ext);
         printf("recombining %s%s successful (%d + %d -> %d)\n",
-               fns[i], ext.c_str(), unpacked.size(), recon.size(), content.size());
+               fns[i], ext.c_str(), (int)unpacked.size(), (int)recon.size(), (int)content.size());
       } else {
         printf("recombining %s%s failed\n", fns[i], ext.c_str());
       }

@@ -13,6 +13,7 @@
    limitations under the License. */
 
 #include <algorithm>
+#include <string.h>
 #include "preflate_constants.h"
 #include "preflate_statistical_codec.h"
 #include "preflate_statistical_model.h"
@@ -21,8 +22,8 @@
 PreflateTreePredictor::PreflateTreePredictor(
     const std::vector<unsigned char>& dump)
   : input(dump)
-  , predictionFailure(false)
-  , curPos(0) {
+  , curPos(0)
+  , predictionFailure(false) {
 }
 
 struct FreqIdxPair {
@@ -40,7 +41,7 @@ struct TreeNode {
 */
 bool pq_smaller(const FreqIdxPair& p1, const FreqIdxPair& p2, const unsigned char* nodeDepth) {
   return p1.freq < p2.freq || (p1.freq == p2.freq && nodeDepth[p1.idx] <= nodeDepth[p2.idx]);
-};
+}
 
 /* ===========================================================================
 * Restore the heap property by moving down the tree starting at node k,
@@ -205,6 +206,7 @@ unsigned char PreflateTreePredictor::predictCodeData(const unsigned char* symBit
                                                     const bool first) {
   unsigned char code = symBitLen[0];
   switch (type) {
+  default:
   case TCT_BITS:
     return code;
   case TCT_REP:
@@ -343,8 +345,8 @@ unsigned PreflateTreePredictor::buildDBitlenghs(
   return calcBitLengths(bitLengths, Dcodes, PreflateConstants::D_CODES, 15, 0);
 }
 unsigned PreflateTreePredictor::buildTCBitlengths(
-    unsigned char simpleCodeTree[],
-    unsigned BLfreqs[]) {
+    unsigned char (&simpleCodeTree)[PreflateConstants::BL_CODES],
+    unsigned (&BLfreqs)[PreflateConstants::BL_CODES]) {
   memset(simpleCodeTree, 0, sizeof(simpleCodeTree));
   calcBitLengths(simpleCodeTree, BLfreqs, PreflateConstants::BL_CODES, 7, 0);
   unsigned predictedCTreeSize = PreflateConstants::BL_CODES;
@@ -451,9 +453,6 @@ void PreflateTreePredictor::encodeBlock(
     } else {
       unsigned bl_pred = analysis.correctives[correctivePos++];
       int bl_diff = analysis.correctives[correctivePos++];
-      if (bl_diff != 0) {
-        int a = 0;
-      }
       codec->encode(CORR_LD_BITLENGTH_CORRECTION, bl_diff, bl_pred);
     }
   }
@@ -504,7 +503,7 @@ void PreflateTreePredictor::updateModel(
         correctivePos++;
       }
     } else {
-      unsigned bl_pred = analysis.correctives[correctivePos++];
+      /*unsigned bl_pred = analysis.correctives[*/correctivePos++/*]*/;
       int bl_diff = analysis.correctives[correctivePos++];
       if (bl_diff >= 0) {
         model->LDBitlengthPositiveCorrection[std::min(4, bl_diff)]++;
@@ -517,7 +516,7 @@ void PreflateTreePredictor::updateModel(
   info = analysis.tokenInfo[infoPos++];
   model->TCCountMisprediction[info]++;
   for (unsigned i = 0; i < blcount; ++i) {
-    int bl_pred = analysis.correctives[correctivePos++];
+    /*int bl_pred = analysis.correctives[*/correctivePos++/*]*/;
     int bl_diff = analysis.correctives[correctivePos++];
     if (bl_diff >= 0) {
       model->TCBitlengthPositiveCorrection[std::min(3, bl_diff)]++;
@@ -575,13 +574,13 @@ unsigned PreflateTreePredictor::reconstructLDTrees(
         case TCT_REPZL:
           predictedTreeCodeData = codec->decodeValue(7) + 11;
           break;
+        case TCT_BITS:
+          // unreachable
+          break;
         }
       }
     } else {
       int bl_diff = codec->decode(CORR_LD_BITLENGTH_CORRECTION, predictedTreeCodeData);
-      if (bl_diff != 0) {
-        int a = 0;
-      }
       predictedTreeCodeData += bl_diff;
     }
     unsigned l;

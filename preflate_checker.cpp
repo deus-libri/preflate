@@ -12,6 +12,8 @@
    See the License for the specific language governing permissions and
    limitations under the License. */
 
+#include <stdio.h>
+#include <string.h>
 #include "preflate_block_decoder.h"
 #include "preflate_block_reencoder.h"
 #include "preflate_checker.h"
@@ -27,7 +29,7 @@
 #include <algorithm>
 
 bool preflate_checker(const std::vector<unsigned char>& deflate_raw) {
-  printf("Checking raw deflate file of size %d\n", deflate_raw.size());
+  printf("Checking raw deflate file of size %d\n", (int)deflate_raw.size());
 
   std::vector<unsigned char> unpacked_output;
   std::vector<PreflateTokenBlock> blocks;
@@ -35,7 +37,7 @@ bool preflate_checker(const std::vector<unsigned char>& deflate_raw) {
     printf("inflating error (modified zlib)\n");
     return false;
   }
-  printf("Unpacked data has size %d\n", unpacked_output.size());
+  printf("Unpacked data has size %d\n", (int)unpacked_output.size());
   MemStream decIn(deflate_raw);
   MemStream decUnc;
   BitInputStream decInBits(decIn);
@@ -121,7 +123,7 @@ bool preflate_checker(const std::vector<unsigned char>& deflate_raw) {
     tokenPredictorE.encodeEOF(&codecE, i, i + 1 == blocks.size());
   }
   std::vector<unsigned char> preflate_diff = codecE.encodeFinish();
-  printf("Prediction diff has size %d\n", preflate_diff.size());
+  printf("Prediction diff has size %d\n", (int)preflate_diff.size());
 
   // Decode
   PreflateStatisticalDecoder codecD(preflate_diff);
@@ -183,7 +185,7 @@ bool preflate_checker(const std::vector<unsigned char>& deflate_raw) {
   bool eof = true;
   do {
     if (blockno >= blocks.size()) {
-      printf("block number too big: org %d, new %d\n", blocks.size(), blockno);
+      printf("block number too big: org %d, new %d\n", (int)blocks.size(), blockno);
       return false;
     }
     PreflateTokenBlock block = tokenPredictorD.decodeBlock(&codecD);
@@ -206,7 +208,7 @@ bool preflate_checker(const std::vector<unsigned char>& deflate_raw) {
     }
     if (block.tokens.size() != blocks[blockno].tokens.size()) {
       printf("block %d: differing token count: org %d, new %d\n",
-             blockno, blocks[blockno].tokens.size(), block.tokens.size());
+             blockno, (int)blocks[blockno].tokens.size(), (int)block.tokens.size());
       return false;
     }
 
@@ -253,7 +255,8 @@ bool preflate_checker(const std::vector<unsigned char>& deflate_raw) {
     }
   }
   if (deflate_raw.size() != deflate_raw_out.size()) {
-    printf("created deflate streams differs in size: org %d, new %d\n", deflate_raw.size(), deflate_raw_out.size());
+    printf("created deflate streams differs in size: org %d, new %d\n", 
+           (int)deflate_raw.size(), (int)deflate_raw_out.size());
     return false;
   }
   printf("Success\n");
