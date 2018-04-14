@@ -10,7 +10,7 @@ PREFLATE_LIB_FILEROOTS = block_decoder block_reencoder block_trees complevel_est
                          predictor_state reencoder statistical_codec statistical_model \
                          token_predictor token tree_predictor
 SUPPORT_LIB_FILEROOTS = arithmetic_coder array_helper bit_helper bitstream const_division \
-                        huffman_decoder huffman_encoder huffman_helper \
+                        filestream huffman_decoder huffman_encoder huffman_helper \
                         memstream outputcachestream support_tests task_pool
 PACKARI_FILEROOTS = aricoder bitops
 PREFLATE_DEMO_FILEROOTS = main preflate_checker preflate_dumper preflate_unpack

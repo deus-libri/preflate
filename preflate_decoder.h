@@ -15,6 +15,7 @@
 #ifndef PREFLATE_DECODER_H
 #define PREFLATE_DECODER_H
 
+#include <functional>
 #include <vector>
 #include "preflate_token.h"
 #include "support/stream.h"

@@ -14,6 +14,7 @@
 
 #include <algorithm>
 #include <string.h>
+#include <stdio.h>
 #include "filestream.h"
 
 FileStream::FileStream(FILE* f) : _f(f) {}
