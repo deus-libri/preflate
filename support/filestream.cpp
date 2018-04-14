@@ -12,18 +12,28 @@
    See the License for the specific language governing permissions and
    limitations under the License. */
 
-#ifndef PREFLATE_REENCODER_H
-#define PREFLATE_REENCODER_H
+#include <algorithm>
+#include <string.h>
+#include "filestream.h"
 
-#include <vector>
+FileStream::FileStream(FILE* f) : _f(f) {}
 
-bool preflate_reencode(std::vector<unsigned char>& deflate_raw,
-                       const std::vector<unsigned char>& preflate_diff,
-                       const std::vector<unsigned char>& unpacked_input);
+bool FileStream::eof() const {
+  return feof(_f);
+}
+size_t FileStream::read(unsigned char* buffer, const size_t size) {
+  return fread(buffer, 1, size, _f);
+}
 
-bool preflate_reencode(OutputStream& os,
-                       const std::vector<unsigned char>& preflate_diff,
-                       const std::vector<unsigned char>& unpacked_input,
-                       std::function<void(void)> block_callback);
+size_t FileStream::write(const unsigned char* buffer, const size_t size) {
+  return fwrite(buffer, 1, size, _f);
+}
 
-#endif /* PREFLATE_REENCODER_H */
+uint64_t FileStream::tell() const {
+  return _ftelli64(_f);
+}
+uint64_t FileStream::seek(const uint64_t newPos) {
+  uint64_t oldPos = tell();
+  _fseeki64(_f, newPos, SEEK_SET);
+  return oldPos;
+}

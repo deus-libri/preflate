@@ -27,7 +27,9 @@ class PreflateBlockDecoder {
 public:
   enum ErrorCode {
     OK,
-    STORED_BLOCK_LEN_MISMATCH
+    STORED_BLOCK_LEN_MISMATCH,
+    STORED_BLOCK_PADDING_MISMATCH,
+    BADLY_CODED_MAX_LENGTH
   };
   PreflateBlockDecoder(BitInputStream& input,
                        OutputCacheStream& output);
@@ -48,6 +50,9 @@ private:
   }
   void _skipToByte() {
     _input.skipToByte();
+  }
+  bool _checkLastBitsOfByte() {
+    return _input.checkLastBitsOfByteAreZero();
   }
   void _writeLiteral(const unsigned char l) {
     _output.write(&l, 1);

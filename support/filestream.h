@@ -12,18 +12,27 @@
    See the License for the specific language governing permissions and
    limitations under the License. */
 
-#ifndef PREFLATE_REENCODER_H
-#define PREFLATE_REENCODER_H
+#ifndef FILESTREAM_H
+#define FILESTREAM_H
 
+#include <stdint.h>
 #include <vector>
+#include "stream.h"
 
-bool preflate_reencode(std::vector<unsigned char>& deflate_raw,
-                       const std::vector<unsigned char>& preflate_diff,
-                       const std::vector<unsigned char>& unpacked_input);
+class FileStream : public SeekableInputOutputStream {
+public:
+  FileStream(FILE* f);
 
-bool preflate_reencode(OutputStream& os,
-                       const std::vector<unsigned char>& preflate_diff,
-                       const std::vector<unsigned char>& unpacked_input,
-                       std::function<void(void)> block_callback);
+  virtual bool eof() const;
+  virtual size_t read(unsigned char* buffer, const size_t size);
 
-#endif /* PREFLATE_REENCODER_H */
+  virtual size_t write(const unsigned char* buffer, const size_t size);
+
+  virtual uint64_t tell() const;
+  virtual uint64_t seek(const uint64_t newPos);
+
+private:
+  FILE* _f;
+};
+
+#endif /* FILESTREAM_H */

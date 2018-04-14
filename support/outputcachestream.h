@@ -54,6 +54,9 @@ public:
   const unsigned char* cacheEnd() const {
     return _cache.data() + _cache.size();
   }
+  const size_t cacheSize() const {
+    return _cache.size();
+  }
 
 private:
   OutputStream& _os;

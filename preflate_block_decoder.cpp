@@ -48,6 +48,9 @@ bool PreflateBlockDecoder::readBlock(PreflateTokenBlock &block, bool &last) {
     return false;
   case 0: {
     block.type = PreflateTokenBlock::STORED;
+    if (!_checkLastBitsOfByte()) {
+      return _error(STORED_BLOCK_PADDING_MISMATCH);
+    }
     _skipToByte();
     size_t len = _readBits(16);
     size_t ilen = _readBits(16);
@@ -88,6 +91,9 @@ bool PreflateBlockDecoder::readBlock(PreflateTokenBlock &block, bool &last) {
           + PreflateConstants::lengthBaseTable[lcode]
           + _readBits(PreflateConstants::lengthExtraTable[lcode]);
         // todo: handle second version of len 258
+        if (len == 258 && lcode != PreflateConstants::L_CODES - PreflateConstants::LITERALS - 2) {
+          return _error(BADLY_CODED_MAX_LENGTH);
+        }
         unsigned dcode = _distDecoder->decode(_input);
         if (dcode > PreflateConstants::D_CODES) {
           return false;
@@ -95,6 +101,9 @@ bool PreflateBlockDecoder::readBlock(PreflateTokenBlock &block, bool &last) {
         unsigned dist = 1
           + PreflateConstants::distBaseTable[dcode]
           + _readBits(PreflateConstants::distExtraTable[dcode]);
+        if (dist > _output.cacheEndPos()) {
+          return false;
+        }
         _writeReference(dist, len);
         block.tokens.push_back(PreflateToken(PreflateToken::REFERENCE, len, dist));
         earliest_reference = std::min(earliest_reference, curPos - (int32_t)dist);

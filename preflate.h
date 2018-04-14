@@ -12,18 +12,10 @@
    See the License for the specific language governing permissions and
    limitations under the License. */
 
-#ifndef PREFLATE_REENCODER_H
-#define PREFLATE_REENCODER_H
+#ifndef PREFLATE_H
+#define PREFLATE_H
 
-#include <vector>
+#include "preflate_decoder.h"
+#include "preflate_reencoder.h"
 
-bool preflate_reencode(std::vector<unsigned char>& deflate_raw,
-                       const std::vector<unsigned char>& preflate_diff,
-                       const std::vector<unsigned char>& unpacked_input);
-
-bool preflate_reencode(OutputStream& os,
-                       const std::vector<unsigned char>& preflate_diff,
-                       const std::vector<unsigned char>& unpacked_input,
-                       std::function<void(void)> block_callback);
-
-#endif /* PREFLATE_REENCODER_H */
+#endif /* PREFLATE_H */

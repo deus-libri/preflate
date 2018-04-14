@@ -17,13 +17,16 @@
 
 #include <vector>
 #include "preflate_token.h"
-
-bool preflate_unpack(std::vector<unsigned char>& unpacked_output,
-                     PreflateTokenBlock& tokens,
-                     const std::vector<unsigned char>& deflate_raw);
+#include "support/stream.h"
 
 bool preflate_decode(std::vector<unsigned char>& unpacked_output,
                      std::vector<unsigned char>& preflate_diff,
                      const std::vector<unsigned char>& deflate_raw);
+
+bool preflate_decode(std::vector<unsigned char>& unpacked_output,
+                     std::vector<unsigned char>& preflate_diff,
+                     uint64_t& deflate_size,
+                     InputStream& deflate_raw,
+                     std::function<void (void)> block_callback);
 
 #endif /* PREFLATE_DECODER_H */

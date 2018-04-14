@@ -16,7 +16,7 @@
 #include <memory.h>
 #include "bitstream.h"
 
-BitInputStream::BitInputStream(SeekableInputStream& is)
+BitInputStream::BitInputStream(InputStream& is)
   : _input(is)
   , _bufPos(0)
   , _bufSize(0)
@@ -24,6 +24,7 @@ BitInputStream::BitInputStream(SeekableInputStream& is)
   , _eof(false)
   , _bits(0)
   , _bitsRemaining(0)
+  , _totalBitPos(0)
 {}
 
 void BitInputStream::_fillBytes() {
@@ -67,6 +68,7 @@ size_t BitInputStream::copyBytesTo(OutputStream& output, const size_t len) {
     a[l++] = _bits & 0xff;
     _bitsRemaining -= 8;
     _bits >>= 8;
+    _totalBitPos += 8;
   }
   size_t w = output.write(a, l);
   if (w != l) {
@@ -75,6 +77,7 @@ size_t BitInputStream::copyBytesTo(OutputStream& output, const size_t len) {
   while (l < len) {
     unsigned todo = std::min(len - l, (size_t)(_bufSize - _bufPos));
     w = output.write(_buffer + _bufPos, todo);
+    _totalBitPos += 8 * w;
     _bufPos += w;
     l += w;
     if (w != todo) {

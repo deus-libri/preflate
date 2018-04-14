@@ -22,10 +22,14 @@
 // Huffman decoder for little endian 
 class BitInputStream {
 public:
-  BitInputStream(SeekableInputStream&);
+  BitInputStream(InputStream&);
 
   bool eof() const {
     return _eof && _bufPos == _bufSize && !_bitsRemaining;
+  }
+
+  size_t bitPos() const {
+    return _totalBitPos;
   }
 
   size_t peek(const unsigned n) {
@@ -37,6 +41,7 @@ public:
   void skip(const unsigned n) {
     _bitsRemaining -= std::min(n, _bitsRemaining);
     _bits >>= n;
+    _totalBitPos += n;
   }
   size_t get(const unsigned n) {
     size_t v = peek(n);
@@ -48,6 +53,9 @@ public:
   }
   void skipToByte() {
     skip(_bitsRemaining & 7);
+  }
+  bool checkLastBitsOfByteAreZero() {
+    return peek(_bitsRemaining & 7) == 0;
   }
   void fastFill(const unsigned n) {
     if (_bitsRemaining < n) {
@@ -70,12 +78,13 @@ private:
 
   enum { BUF_SIZE = 1024, PRE_BUF_EXTRA = 16, BITS = sizeof(size_t)*8 };
 
-  SeekableInputStream& _input;
+  InputStream& _input;
   unsigned char _buffer[PRE_BUF_EXTRA + BUF_SIZE];
   unsigned _bufPos, _bufSize, _bufFastLimit;
   bool _eof;
   size_t _bits;
   unsigned _bitsRemaining;
+  size_t _totalBitPos;
 };
 
 class BitOutputStream {
@@ -96,6 +105,9 @@ public:
     _bitPos = (_bitPos + 7) & ~7;
   }
   void flush();
+  unsigned bitPos() const {
+    return _bitPos;
+  }
 
 private:
   void _flush();

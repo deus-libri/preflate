@@ -35,7 +35,7 @@ public:
   const std::vector<uint8_t>& data() const {
     return _data;
   }
-  std::vector<uint8_t> extractData() const {
+  std::vector<uint8_t> extractData() {
     return std::move(_data);
   }
 
