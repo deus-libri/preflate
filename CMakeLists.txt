@@ -28,7 +28,7 @@ add_stem2file(LIB_SRC "${SRCDIR}/support/%STEM%.cpp"
               "arithmetic_coder;array_helper;bit_helper;bitstream;const_division;\
                filestream;huffman_decoder;huffman_encoder;huffman_helper;memstream;\
                outputcachestream;task_pool")
-add_stem2file(LIB_SRC "${OBJDIR}/packARI/source/%STEM%.cpp" 
+add_stem2file(LIB_SRC "${SRCDIR}/packARI/source/%STEM%.cpp" 
               "aricoder;bitops")
 
 set(DEMO_SRC "")
