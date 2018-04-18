@@ -31,7 +31,7 @@ add_stem2file(LIB_SRC "${SRCDIR}/support/%STEM%.cpp"
 add_stem2file(LIB_SRC "${SRCDIR}/packARI/source/%STEM%.cpp" 
               "aricoder;bitops")
 
-set(DEMO_SRC "")
+set(DEMO_SRC "${SRCDIR}/main.cpp")
 add_stem2file(DEMO_SRC "${SRCDIR}/preflate_%STEM%.cpp" 
               "checker;dumper;unpack")
 add_stem2file(DEMO_SRC "${SRCDIR}/support/%STEM%.cpp"
@@ -54,7 +54,7 @@ add_stem2file(LIB_HDR "${SRCDIR}/packARI/source/%STEM%.h"
               "aricoder;bitops")
 
 add_definitions(-DZ_SOLO -DNO_GZIP)
-set(DEMO_HDR "${SRCDIR}/main.cpp")
+set(DEMO_HDR "")
 add_stem2file(DEMO_HDR "${SRCDIR}/preflate_%STEM%.h" 
               "checker;dumper;unpack")
 add_stem2file(DEMO_HDR "${SRCDIR}/support/%STEM%.h" 
