@@ -33,7 +33,7 @@ add_stem2file(LIB_SRC "${SRCDIR}/packARI/source/%STEM%.cpp"
 
 set(DEMO_SRC "${SRCDIR}/main.cpp")
 add_stem2file(DEMO_SRC "${SRCDIR}/preflate_%STEM%.cpp" 
-              "checker;dumper;unpack")
+              "checker;dumper;unpack;statistical_debug")
 add_stem2file(DEMO_SRC "${SRCDIR}/support/%STEM%.cpp"
               "support_tests")
 add_stem2file(DEMO_SRC "${SRCDIR}/zlib1.2.11.dec/%STEM%.c"
