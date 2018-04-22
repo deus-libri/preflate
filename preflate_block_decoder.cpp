@@ -101,7 +101,7 @@ bool PreflateBlockDecoder::readBlock(PreflateTokenBlock &block, bool &last) {
         if (dist > _output.cacheEndPos()) {
           return false;
         }
-        _writeReference(dist, len);
+        _writeReference(dist, len & 511);
         block.tokens.push_back(PreflateToken(PreflateToken::REFERENCE, len, dist));
         earliest_reference = std::min(earliest_reference, curPos - (int32_t)dist);
         curPos += len;

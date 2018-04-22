@@ -168,6 +168,9 @@ public:
   void setStream(aricoder*);
 
   static void encodeValue(aricoder* codec, const unsigned value, const unsigned maxBits) {
+#ifdef _DEBUG
+    _ASSERT(value < (1 << maxBits));
+#endif
     symbol s;
     s.scale = 1 << maxBits;
     s.low_count = value;

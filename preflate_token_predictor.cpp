@@ -246,7 +246,7 @@ void PreflateTokenPredictor::encodeBlock(
       unsigned bitsToSave = bitLength(analysis.paddingBits);
       codec->encodeValue(bitsToSave, 3);
       if (bitsToSave > 1) {
-        codec->encodeValue(analysis.paddingBits, bitsToSave - 1);
+        codec->encodeValue(analysis.paddingBits & ((1 << (bitsToSave - 1)) - 1), bitsToSave - 1);
       }
     }
     return;

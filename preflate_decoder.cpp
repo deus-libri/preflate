@@ -97,10 +97,10 @@ bool preflate_decode(std::vector<unsigned char>& unpacked_output,
   }
   pcodec.encodeNonZeroPadding(remaining_bits != 0);
   if (remaining_bits != 0) {
-    unsigned bitsToSave = bitLength(remaining_bit_count);
+    unsigned bitsToSave = bitLength(remaining_bits);
     pcodec.encodeValue(bitsToSave, 3);
     if (bitsToSave > 1) {
-      pcodec.encodeValue(remaining_bits, bitsToSave - 1);
+      pcodec.encodeValue(remaining_bits & ((1 << (bitsToSave - 1)) - 1), bitsToSave - 1);
     }
   }
   if (!encoder.endMetaBlock(pcodec, unpacked_output.size())) {

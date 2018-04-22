@@ -66,11 +66,14 @@ bool preflate_checker(const std::vector<unsigned char>& deflate_raw) {
     blocks.push_back(newBlock);
     ++i;
   } while (!last);
+  uint8_t remaining_bit_count = (8 - decInBits.bitPos()) & 7;
+  uint8_t remaining_bits = decInBits.get(remaining_bit_count);
   decOutCache.flush();
   if (decUnc.data() != unpacked_output) {
     for (unsigned i = 0, n = std::min(decUnc.data().size(), unpacked_output.size()); i < n; ++i) {
       if (decUnc.data()[i] != unpacked_output[i]) {
         printf("xxx %d\n", i);
+        break;
       }
     }
     return false;
@@ -102,6 +105,7 @@ bool preflate_checker(const std::vector<unsigned char>& deflate_raw) {
     tokenPredictorE.updateCounters(&counterE, i);
     treePredictorE.updateCounters(&counterE, i);
   }
+  counterE.block.incNonZeroPadding(remaining_bits != 0);
 
   counterE.print();
 
@@ -126,6 +130,14 @@ bool preflate_checker(const std::vector<unsigned char>& deflate_raw) {
       return false;
     }
     tokenPredictorE.encodeEOF(&pcodecE, i, i + 1 == blocks.size());
+  }
+  pcodecE.encodeNonZeroPadding(remaining_bits != 0);
+  if (remaining_bits != 0) {
+    unsigned bitsToSave = bitLength(remaining_bits);
+    pcodecE.encodeValue(bitsToSave, 3);
+    if (bitsToSave > 1) {
+      pcodecE.encodeValue(remaining_bits & ((1 << (bitsToSave - 1)) - 1), bitsToSave - 1);
+    }
   }
   if (!codecE.endMetaBlock(pcodecE, unpacked_output.size())) {
     return false;
@@ -244,6 +256,15 @@ bool preflate_checker(const std::vector<unsigned char>& deflate_raw) {
     deflater.writeBlock(block, eof);
     ++blockno;
   } while (!eof);
+  bool non_zero_bits = pcodecD.decodeNonZeroPadding();
+  if (non_zero_bits) {
+    unsigned bitsToLoad = pcodecD.decodeValue(3);
+    unsigned padding = 0;
+    if (bitsToLoad > 0) {
+      padding = (1 << (bitsToLoad - 1)) + pcodecD.decodeValue(bitsToLoad - 1);
+    }
+    bos.put(padding, bitsToLoad);
+  }
   if (!codecD.endMetaBlock(pcodecD)) {
     return false;
   }

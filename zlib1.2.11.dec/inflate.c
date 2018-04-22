@@ -1159,7 +1159,7 @@ int flush;
 #endif
             Tracevv((stderr, "inflate:         distance %u\n", state->offset));
             state->mode = MATCH;
-            prefdump_reference(strm->dumper, state->offset, state->length < 258 ? state->length : 258 + state->lengthx);
+            prefdump_reference(strm->dumper, state->offset, state->length == 258 ? 258 + 512 * state->lengthx : state->length);
         case MATCH:
             if (left == 0) goto inf_leave;
             copy = out - left;

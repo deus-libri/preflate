@@ -171,7 +171,7 @@ unsigned start;         /* inflate()'s starting value for strm->avail_out */
                 bits -= op;
                 Tracevv((stderr, "inflate:         distance %u\n", dist));
                 op = (unsigned)(out - beg);     /* max distance in output */
-                prefdump_reference(strm->dumper, dist, len < 258 ? len : len + lenx);
+                prefdump_reference(strm->dumper, dist, len == 258 ? 258 + 512 * lenx : len);
                 if (dist > op) {                /* see if copy from window */
                     op = dist - op;             /* distance back in window */
                     if (op > whave) {
