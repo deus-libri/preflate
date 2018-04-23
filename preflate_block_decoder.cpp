@@ -83,16 +83,19 @@ bool PreflateBlockDecoder::readBlock(PreflateTokenBlock &block, bool &last) {
         block.uncompressedLen = _output.cacheEndPos() - block.uncompressedStartPos;
         block.contextLen = -earliest_reference;
         return true;
-      } else if (litLen <= PreflateConstants::L_CODES) {
-        unsigned lcode = litLen - PreflateConstants::LITERALS - 1;
+      } else {
+        unsigned lcode = litLen - PreflateConstants::NONLEN_CODE_COUNT;
+        if (lcode >= PreflateConstants::LEN_CODE_COUNT) {
+          return false;
+        }
         unsigned len = PreflateConstants::MIN_MATCH
           + PreflateConstants::lengthBaseTable[lcode]
           + _readBits(PreflateConstants::lengthExtraTable[lcode]);
-        if (len == 258 && lcode != PreflateConstants::L_CODES - PreflateConstants::LITERALS - 2) {
+        if (len == 258 && lcode != PreflateConstants::LEN_CODE_COUNT - 1) {
           len |= 512;
         }
         unsigned dcode = _distDecoder->decode(_input);
-        if (dcode > PreflateConstants::D_CODES) {
+        if (dcode >= PreflateConstants::DIST_CODE_COUNT) {
           return false;
         }
         unsigned dist = 1
@@ -105,8 +108,6 @@ bool PreflateBlockDecoder::readBlock(PreflateTokenBlock &block, bool &last) {
         block.tokens.push_back(PreflateToken(PreflateToken::REFERENCE, len, dist));
         earliest_reference = std::min(earliest_reference, curPos - (int32_t)dist);
         curPos += len;
-      } else {
-        return false;
       }
     }
   }
@@ -118,17 +119,17 @@ void PreflateBlockDecoder::_setupStaticTables() {
 }
 
 bool PreflateBlockDecoder::_readDynamicTables(PreflateTokenBlock& block) {
-  block.nlen = PreflateConstants::LITERALS + 1 + _readBits(5);
+  block.nlen = PreflateConstants::NONLEN_CODE_COUNT + _readBits(5);
   block.ndist = 1 + _readBits(5);
   block.ncode = 4 + _readBits(4);
-  if (block.nlen > PreflateConstants::L_CODES || block.ndist > PreflateConstants::D_CODES) {
+  if (block.nlen > PreflateConstants::LITLEN_CODE_COUNT || block.ndist > PreflateConstants::DIST_CODE_COUNT) {
     return false;
   }
   block.treecodes.clear();
   block.treecodes.reserve(block.nlen + block.ndist + block.ncode);
 
-  unsigned char tcBitLengths[PreflateConstants::BL_CODES];
-  unsigned char ldBitLengths[PreflateConstants::LD_CODES];
+  unsigned char tcBitLengths[PreflateConstants::CODETREE_CODE_COUNT];
+  unsigned char ldBitLengths[PreflateConstants::LITLENDIST_CODE_COUNT];
   memset(tcBitLengths, 0, sizeof(tcBitLengths));
   memset(ldBitLengths, 0, sizeof(ldBitLengths));
   for (unsigned i = 0, n = block.ncode; i < n; ++i) {
@@ -136,7 +137,7 @@ bool PreflateBlockDecoder::_readDynamicTables(PreflateTokenBlock& block) {
     block.treecodes.push_back(tc);
     tcBitLengths[PreflateConstants::treeCodeOrderTable[i]] = tc;
   }
-  HuffmanDecoder tcTree(tcBitLengths, PreflateConstants::BL_CODES, true, 7);
+  HuffmanDecoder tcTree(tcBitLengths, PreflateConstants::CODETREE_CODE_COUNT, true, 7);
   if (tcTree.error()) {
     return false;
   }

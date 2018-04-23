@@ -51,15 +51,18 @@ struct PreflateSubModel {
     symbol s;
     s.scale = 1 << 16;
     unsigned cnt = codec->decode_count(&s);
-    for (unsigned i = 0; i < N; ++i) {
-      if (cnt < bounds[i + 1]) {
-        s.low_count = bounds[i];
-        s.high_count = bounds[i + 1];
+    for (unsigned i = N; i > 1; --i) {
+      if (cnt >= bounds[i - 1]) {
+        s.low_count = bounds[i - 1];
+        s.high_count = bounds[i];
         codec->decode(&s);
-        return ids[i];
+        return ids[i - 1];
       }
     }
-    return 0;
+    s.low_count = bounds[0];
+    s.high_count = bounds[1];
+    codec->decode(&s);
+    return ids[0];
   }
   bool isEqualTo(const PreflateSubModel<N>& m) const;
 

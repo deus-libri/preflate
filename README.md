@@ -104,11 +104,13 @@ There is also a CMake script which hopefully works for non Windows platforms.
 Credits
 -------
 - "precomp" by Christian Schneider
+  (https://github.com/schnaader/precomp-cpp)
 - "reflate" and "rawdet" by Eugene Shelwien
 - "zlib" by Mark Adler et al.
 - "7zip" by Igor Pavlov
 - "kzip" by Ken Silverman
 - "grittibanzli" by Google Zurich (inofficial project)
+  (https://github.com/google/grittibanzli)
 
 All of the software above is just AWESOME!
 
