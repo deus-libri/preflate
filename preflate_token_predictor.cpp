@@ -40,10 +40,10 @@ bool PreflateTokenPredictor::predictEOB() {
   return state.availableInputSize() == 0 || currentTokenCount == state.maxTokenCount;
 }
 void PreflateTokenPredictor::commitToken(const PreflateToken& t) {
-  if (fast && (t.len & 511) > state.lazyMatchLength()) {
-    hash.skipHash(t.len & 511);
+  if (fast && t.len > state.lazyMatchLength()) {
+    hash.skipHash(t.len);
   } else {
-    hash.updateHash(t.len & 511);
+    hash.updateHash(t.len);
   }
 }
 #  define TOO_FAR 4096
@@ -167,8 +167,6 @@ void PreflateTokenPredictor::analyzeBlock(
 
   for (unsigned i = 0, n = block.tokens.size(); i < n; ++i) {
     PreflateToken targetToken = block.tokens[i];
-    unsigned orgTargetTokenLen = targetToken.len;
-    targetToken.len &= 511;
     if (predictEOB()) {
       analysis.blockSizePredicted = false;
     }
@@ -216,9 +214,9 @@ void PreflateTokenPredictor::analyzeBlock(
         }
       }
     }
-    if ((orgTargetTokenLen & 511) == 258) {
+    if (targetToken.len == 258) {
       analysis.tokenInfo[currentTokenCount] += 16;
-      if (orgTargetTokenLen & 512) {
+      if (targetToken.irregular258) {
         analysis.tokenInfo[currentTokenCount] += 32;
       }
     }
@@ -462,9 +460,7 @@ PreflateTokenBlock PreflateTokenPredictor::decodeBlock(
       }
     }
     if (predictedToken.len == 258) {
-      if (codec->decodeIrregularLen258()) {
-        predictedToken.len |= 512;
-      }
+      predictedToken.irregular258 = codec->decodeIrregularLen258();
     }
     block.tokens.push_back(predictedToken);
     commitToken(predictedToken);

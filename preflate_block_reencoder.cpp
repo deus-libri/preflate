@@ -124,11 +124,9 @@ bool PreflateBlockReencoder::_writeTokens(const std::vector<PreflateToken>& toke
       _litLenEncoder->encode(_output, literal);
     } else {
       // handle irregular length of 258
-      if (token.len == 258 + 512) {
-        unsigned lencode = PreflateConstants::LCode(token.len);
+      if (token.irregular258) {
         _litLenEncoder->encode(_output, PreflateConstants::LITLEN_CODE_COUNT - 2);
         _output.put(31, 5);
-        token.len -= 512;
       } else {
         unsigned lencode = PreflateConstants::LCode(token.len);
         _litLenEncoder->encode(_output, PreflateConstants::NONLEN_CODE_COUNT + lencode);

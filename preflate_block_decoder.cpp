@@ -91,9 +91,7 @@ bool PreflateBlockDecoder::readBlock(PreflateTokenBlock &block, bool &last) {
         unsigned len = PreflateConstants::MIN_MATCH
           + PreflateConstants::lengthBaseTable[lcode]
           + _readBits(PreflateConstants::lengthExtraTable[lcode]);
-        if (len == 258 && lcode != PreflateConstants::LEN_CODE_COUNT - 1) {
-          len |= 512;
-        }
+        bool irregular258 = len == 258 && lcode != PreflateConstants::LEN_CODE_COUNT - 1;
         unsigned dcode = _distDecoder->decode(_input);
         if (dcode >= PreflateConstants::DIST_CODE_COUNT) {
           return false;
@@ -104,8 +102,8 @@ bool PreflateBlockDecoder::readBlock(PreflateTokenBlock &block, bool &last) {
         if (dist > _output.cacheEndPos()) {
           return false;
         }
-        _writeReference(dist, len & 511);
-        block.tokens.push_back(PreflateToken(PreflateToken::REFERENCE, len, dist));
+        _writeReference(dist, len);
+        block.tokens.push_back(PreflateToken(PreflateToken::REFERENCE, len, dist, irregular258));
         earliest_reference = std::min(earliest_reference, curPos - (int32_t)dist);
         curPos += len;
       }
