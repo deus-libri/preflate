@@ -17,10 +17,17 @@
 #include "array_helper.h"
 #include "bit_helper.h"
 
+const uint8_t ArithmeticCodecBase::_normCheckLUT[8] = {
+  0x33, 0x77, 0xff, 0xff, 0x33, 0x77, 0xff, 0xff
+};
+
+ArithmeticCodecBase::ArithmeticCodecBase()
+  : _low(0)
+  , _high(0x7fffffff) {}
+
+
 ArithmeticEncoder::ArithmeticEncoder(BitOutputStream& bos)
   : _bos(bos)
-  , _low(0)
-  , _high(0x7fffffff)
   , _e3cnt(0) {}
 
 void ArithmeticEncoder::_writeE3(const unsigned w) {
@@ -79,9 +86,7 @@ void ArithmeticEncoder::_normalize() {
 
 ArithmeticDecoder::ArithmeticDecoder(BitInputStream& bis) 
   : _bis(bis)
-  , _value(0)
-  , _low(0)
-  , _high(0x7fffffff) {
+  , _value(0) {
   _value = _bis.getReverse(16) << 15;
   _value |= _bis.getReverse(15);
 }
@@ -118,10 +123,10 @@ void ArithmeticDecoder::_normalize() {
     _high = ((((_high + 1) << l) - 1) & 0x3fffffff)
       | 0x40000000;
     if (l <= 16) {
-      _value = ((_value << l) + _bis.getReverse(l)) & 0x7fffffff;
+      _value = (((_value << l) + _bis.getReverse(l)) -0x40000000) & 0x7fffffff;
     } else {
-      _value = ((_value << 16) + _bis.getReverse(16)) & 0x7fffffff;
-      _value = ((_value << (l - 16)) + _bis.getReverse(l - 16)) & 0x7fffffff;
+      _value = ((_value << 16) + _bis.getReverse(16));
+      _value = (((_value << (l - 16)) + _bis.getReverse(l - 16)) - 0x40000000) & 0x7fffffff;
     }
   }
 }
