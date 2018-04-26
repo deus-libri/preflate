@@ -28,16 +28,12 @@ add_stem2file(LIB_SRC "${SRCDIR}/support/%STEM%.cpp"
               "arithmetic_coder;array_helper;bit_helper;bitstream;const_division;\
                filestream;huffman_decoder;huffman_encoder;huffman_helper;memstream;\
                outputcachestream;task_pool")
-add_stem2file(LIB_SRC "${SRCDIR}/packARI/source/%STEM%.cpp" 
-              "aricoder;bitops")
 
 set(DEMO_SRC "${SRCDIR}/main.cpp")
 add_stem2file(DEMO_SRC "${SRCDIR}/preflate_%STEM%.cpp" 
-              "checker;dumper;unpack;statistical_debug")
+              "checker;statistical_debug")
 add_stem2file(DEMO_SRC "${SRCDIR}/support/%STEM%.cpp"
               "support_tests")
-add_stem2file(DEMO_SRC "${SRCDIR}/zlib1.2.11.dec/%STEM%.c"
-              "adler32;inffast;inflate;inftrees;trees;zutil")
 
 set(LIB_HDR "")
 add_stem2file(LIB_HDR "${SRCDIR}/preflate_%STEM%.h" 
@@ -49,18 +45,14 @@ add_stem2file(LIB_HDR "${SRCDIR}/preflate_%STEM%.h"
 add_stem2file(LIB_HDR "${SRCDIR}/support/%STEM%.h" 
               "arithmetic_coder;array_helper;bitstream;bit_helper;const_division;\
                filestream;huffman_decoder;huffman_encoder;huffman_helper;\
-               memstream;outputcachestream;support_tests;task_pool")
-add_stem2file(LIB_HDR "${SRCDIR}/packARI/source/%STEM%.h" 
-              "aricoder;bitops")
+               memstream;outputcachestream;task_pool")
 
 add_definitions(-DZ_SOLO -DNO_GZIP)
 set(DEMO_HDR "")
 add_stem2file(DEMO_HDR "${SRCDIR}/preflate_%STEM%.h" 
-              "checker;dumper;unpack")
+              "checker")
 add_stem2file(DEMO_HDR "${SRCDIR}/support/%STEM%.h" 
               "support_tests")
-add_stem2file(DEMO_HDR "${SRCDIR}/zlib1.2.11.dec/%STEM%.h" 
-              "inffast;inffixed;inflate;inftrees;trees;zconf;zlib;zutil")
                
 add_library(preflate STATIC ${LIB_SRC} ${LIB_HDR})
 add_executable(preflate_demo ${DEMO_SRC} ${DEMO_HDR})

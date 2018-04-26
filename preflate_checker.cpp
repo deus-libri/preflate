@@ -21,7 +21,6 @@
 #include "preflate_statistical_model.h"
 #include "preflate_token_predictor.h"
 #include "preflate_tree_predictor.h"
-#include "preflate_unpack.h"
 #include "support/bitstream.h"
 #include "support/memstream.h"
 #include "support/outputcachestream.h"
@@ -31,13 +30,6 @@
 bool preflate_checker(const std::vector<unsigned char>& deflate_raw) {
   printf("Checking raw deflate file of size %d\n", (int)deflate_raw.size());
 
-  std::vector<unsigned char> unpacked_output;
-  std::vector<PreflateTokenBlock> blocksRef;
-  if (!preflate_unpack(unpacked_output, blocksRef, deflate_raw)) {
-    printf("inflating error (modified zlib)\n");
-    return false;
-  }
-  printf("Unpacked data has size %d\n", (int)unpacked_output.size());
   MemStream decIn(deflate_raw);
   MemStream decUnc;
   BitInputStream decInBits(decIn);
@@ -56,28 +48,14 @@ bool preflate_checker(const std::vector<unsigned char>& deflate_raw) {
       printf("inflating error (preflate)\n");
       return false;
     }
-    if ((last && i + 1 != blocksRef.size())
-      || (!last && i + 1 == blocksRef.size())) {
-      return false;
-    }
-    if (!isEqual(newBlock, blocksRef[i])) {
-      return false;
-    }
     blocks.push_back(newBlock);
     ++i;
   } while (!last);
   uint8_t remaining_bit_count = (8 - decInBits.bitPos()) & 7;
   uint8_t remaining_bits = decInBits.get(remaining_bit_count);
   decOutCache.flush();
-  if (decUnc.data() != unpacked_output) {
-    for (unsigned i = 0, n = std::min(decUnc.data().size(), unpacked_output.size()); i < n; ++i) {
-      if (decUnc.data()[i] != unpacked_output[i]) {
-        printf("xxx %d\n", i);
-        break;
-      }
-    }
-    return false;
-  }
+  std::vector<unsigned char> unpacked_output = decUnc.extractData();
+  printf("Unpacked data has size %d\n", (int)unpacked_output.size());
 
   // Encode
   PreflateParameters paramsE = estimatePreflateParameters(unpacked_output, blocks);

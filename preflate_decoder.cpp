@@ -20,7 +20,6 @@
 #include "preflate_statistical_model.h"
 #include "preflate_token_predictor.h"
 #include "preflate_tree_predictor.h"
-#include "preflate_unpack.h"
 #include "support/bitstream.h"
 #include "support/memstream.h"
 #include "support/outputcachestream.h"

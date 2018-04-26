@@ -45,9 +45,14 @@ void ArithmeticEncoder::flush() {
   } else {
     _bos.put(1, 1);
   }
+  _low = 0;
+  _high = 0x7fffffff;
 }
 
 void ArithmeticEncoder::_normalize() {
+#ifdef _DEBUG
+  _ASSERT(_low <= _high && _high < 0x80000000);
+#endif
   // write determinated bits
   // this is the case if _low features 1 bits
   // or _high features 0 bits
@@ -82,6 +87,9 @@ void ArithmeticEncoder::_normalize() {
     _high = ((((_high + 1) << l) - 1) & 0x3fffffff)
             | 0x40000000;
   }
+#ifdef _DEBUG
+  _ASSERT(_low <= _high && _high < 0x80000000);
+#endif
 }
 
 ArithmeticDecoder::ArithmeticDecoder(BitInputStream& bis) 
@@ -91,6 +99,9 @@ ArithmeticDecoder::ArithmeticDecoder(BitInputStream& bis)
   _value |= _bis.getReverse(15);
 }
 void ArithmeticDecoder::_normalize() {
+#ifdef _DEBUG
+  _ASSERT(_low <= _value && _value <= _high && _high < 0x80000000);
+#endif
   // skip determinated bits
   // this is the case if _low features 1 bits
   // or _high features 0 bits
@@ -129,6 +140,9 @@ void ArithmeticDecoder::_normalize() {
       _value = (((_value << (l - 16)) + _bis.getReverse(l - 16)) - 0x40000000) & 0x7fffffff;
     }
   }
+#ifdef _DEBUG
+  _ASSERT(_low <= _value && _value <= _high && _high < 0x80000000);
+#endif
 }
 
 bool modelCheckFixed(unsigned bounds[], unsigned short ids[], unsigned short rids[],

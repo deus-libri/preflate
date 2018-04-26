@@ -123,13 +123,14 @@ private:
   unsigned _findIndex(const unsigned bounds[],
                       const unsigned N,
                       const unsigned val) {
-    for (unsigned i = 0; i < N; ++i) {
-      if (val < bounds[i + 1]) {
-        return i;
+    for (unsigned i = N; i > 1; --i) {
+      if (val >= bounds[i - 1]) {
+        return i - 1;
       }
     }
-    return N - 1;
+    return 0;
   }
+
   unsigned _decode(const uint32_t step, const unsigned bounds[], const unsigned N) {
     uint32_t val = (_value - _low) / step;
     unsigned result = _findIndex(bounds, N, val);
