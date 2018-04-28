@@ -1,4 +1,4 @@
-preflate v0.1.8
+preflate v0.2.1
 ===============
 Library to split deflate streams into uncompressed data and reconstruction information,
 or reconstruct the original deflate stream from those two. 
@@ -57,7 +57,7 @@ The goal of "preflate" is to get the best of both worlds:
 - for all other deflate streams, we want to be able to reconstruct them with
   reconstruction information that is not much larger than "reflate"
 
-Right now, it has been tested on 11159 valid deflate streams, extracted with
+Right now, it has been tested on some ten thousand valid deflate streams, some extracted with
 "rawdet" from archives etc., and "preflate" was capable of inflating and reconstructing 
 all of them. There's also an experimental fork of "precomp" which incorporates it,
 where it has to cope with lots of invalid deflate streams, or random data which just
@@ -83,8 +83,9 @@ is bigger than 3 bytes (usually only a few tens of bytes though).
 Or in other words: there are files in which Vanilla "precomp" BEATS "preflate"
 in SIZE.
 
-It's quite slow. Especially for files
-containing long runs of the same byte (e.g. \0 or spaces), it gets very, very slow.
+It's quite slow. Since 0.2.1, there is some optimization for long runs of the same byte (e.g.
+\0 or spaces), and some files profit from that tremendously (which were ten times
+slower than now), but for most files the gain is only a few percent.
 Both "precomp" and "reflate" BEAT "preflate" in SPEED. (Expected to be around
 50-500%).
 
@@ -125,28 +126,19 @@ Contains information about a lot of interesting compression tools of which I pro
 would never have known without this site. Also, Stephan helped getting rid of several
 bugs in preflate. Thank you.
 
+- packARI by Matthias Stirner
 
-Notes
------
-Currently, "preflate" uses code from two libraries:
-- packARI by Matthias Stirner, which is licensed under LGPL3
+packARI provides context-aware, adaptive order(n) encoding. "preflate"s
+arithmetic coder is based on packARI's algorithms, but only uses static
+models and contains some speed optimizations which are totally pointless because
+"preflate" spends all its time in the match finder.
 
-  (directory packARI)
 
-  It is used for the arithmetic coding of the reconstruction information.
-- zlib 1.2.11 by Mark Adler et al., under the ZLIB license.
-
-  (directory zlib 1.2.11.dec. Does NOT contain the full ZLIB library!)
-
-  It is used for the decoding of deflate streams, and some callbacks were
-  added to get the decoded trees and tokens, which are then used to build
-  the reconstruction information.
-
-The usage of both libraries will be removed in the future. 
-There already is a new implementation of deflate decoding (which is still slower 
-than the ZLIB one with callbacks).
-And packARI is much more powerful and flexible than what is actually needed
-in "preflate" right now.
+Changes
+-------
+0.1.0 - first public release
+0.2.0 - freeze bitstream format, remove zlib and packARI dependencies
+0.2.1 - add match finder for same character sequences
 
 
 License

@@ -22,7 +22,7 @@ add_stem2file(LIB_SRC "${SRCDIR}/preflate_%STEM%.cpp"
               "block_decoder;block_reencoder;block_trees;\
                complevel_estimator;constants;decoder;hash_chain;info;\
                parameter_estimator;parser_config;predictor_state;reencoder;\
-               statistical_codec;statistical_model;token;\
+               seq_chain;statistical_codec;statistical_model;token;\
                token_predictor;tree_predictor")
 add_stem2file(LIB_SRC "${SRCDIR}/support/%STEM%.cpp"
               "arithmetic_coder;array_helper;bit_helper;bitstream;const_division;\
@@ -38,10 +38,10 @@ add_stem2file(DEMO_SRC "${SRCDIR}/support/%STEM%.cpp"
 set(LIB_HDR "")
 add_stem2file(LIB_HDR "${SRCDIR}/preflate_%STEM%.h" 
               "block_decoder;block_reencoder;block_trees;checker;\
-               complevel_estimator;constants;decoder;dumper;hash_chain;info;\
+               complevel_estimator;constants;decoder;hash_chain;info;\
                parameter_estimator;parser_config;predictor_state;reencoder;\
-               statistical_codec;statistical_model;token;\
-               token_predictor;tree_predictor;unpack")
+               seq_chain;statistical_codec;statistical_model;token;\
+               token_predictor;tree_predictor")
 add_stem2file(LIB_HDR "${SRCDIR}/support/%STEM%.h" 
               "arithmetic_coder;array_helper;bitstream;bit_helper;const_division;\
                filestream;huffman_decoder;huffman_encoder;huffman_helper;\
