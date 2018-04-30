@@ -45,6 +45,7 @@ struct PreflateCompLevelEstimatorState {
 
   PreflateCompLevelEstimatorState(const int wbits, const int mbits,
                                   const std::vector<unsigned char>& unpacked_output,
+                                  const size_t off0,
                                   const std::vector<PreflateTokenBlock>& blocks);
   void updateHash(const unsigned len);
   void updateOrSkipHash(const unsigned len);
@@ -67,6 +68,7 @@ PreflateCompLevelInfo estimatePreflateCompLevel(
     const int wbits, 
     const int mbits,
     const std::vector<unsigned char>& unpacked_output,
+    const size_t off0,
     const std::vector<PreflateTokenBlock>& blocks,
     const bool early_out);
 

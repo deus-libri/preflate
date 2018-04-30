@@ -35,6 +35,8 @@ add_stem2file(DEMO_SRC "${SRCDIR}/preflate_%STEM%.cpp"
 add_stem2file(DEMO_SRC "${SRCDIR}/support/%STEM%.cpp"
               "support_tests")
 
+set(DEMO2_SRC "${SRCDIR}/main2.cpp")
+
 set(LIB_HDR "")
 add_stem2file(LIB_HDR "${SRCDIR}/preflate_%STEM%.h" 
               "block_decoder;block_reencoder;block_trees;checker;\
@@ -53,7 +55,11 @@ add_stem2file(DEMO_HDR "${SRCDIR}/preflate_%STEM%.h"
               "checker")
 add_stem2file(DEMO_HDR "${SRCDIR}/support/%STEM%.h" 
               "support_tests")
-               
+
+set(DEMO2_HDR "")
+
 add_library(preflate STATIC ${LIB_SRC} ${LIB_HDR})
 add_executable(preflate_demo ${DEMO_SRC} ${DEMO_HDR})
+add_executable(preflate_demo2 ${DEMO2_SRC} ${DEMO2_HDR})
 target_link_libraries(preflate_demo preflate)
+target_link_libraries(preflate_demo2 preflate)

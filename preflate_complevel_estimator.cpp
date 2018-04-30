@@ -21,6 +21,7 @@ PreflateCompLevelEstimatorState::PreflateCompLevelEstimatorState(
     const int wbits,
     const int mbits,
     const std::vector<unsigned char>& unpacked_output_,
+    const size_t off0,
     const std::vector<PreflateTokenBlock>& blocks_)
   : slowHash(unpacked_output_, mbits)
   , fastL1Hash(unpacked_output_, mbits)
@@ -31,6 +32,7 @@ PreflateCompLevelEstimatorState::PreflateCompLevelEstimatorState(
 {
   memset(&info, 0, sizeof(info));
   info.possibleCompressionLevels = (1 << 10) - (1 << 1);
+  updateHash(off0);
 }
 
 void PreflateCompLevelEstimatorState::updateHash(const unsigned len) {
@@ -204,9 +206,10 @@ PreflateCompLevelInfo estimatePreflateCompLevel(
     const int wbits, 
     const int mbits,
     const std::vector<unsigned char>& unpacked_output,
+    const size_t off0,
     const std::vector<PreflateTokenBlock>& blocks,
     const bool early_out) {
-  PreflateCompLevelEstimatorState state(wbits, mbits, unpacked_output, blocks);
+  PreflateCompLevelEstimatorState state(wbits, mbits, unpacked_output, off0, blocks);
   state.checkDump(early_out);
   state.recommend();
   return state.info;
