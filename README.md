@@ -1,4 +1,4 @@
-preflate v0.3.0
+preflate v0.3.1
 ===============
 Library to split deflate streams into uncompressed data and reconstruction information,
 or reconstruct the original deflate stream from those two. 
@@ -136,15 +136,15 @@ models and contains some speed optimizations which are totally pointless because
 
 Changes
 -------
-0.1.0 - first public release
-
-0.2.0 - freeze bitstream format, remove zlib and packARI dependencies
-
-0.2.1 - add match finder for same character sequences
-
-0.3.0 - split up large deflate streams into "meta-blocks" of a few megabyte each
+- 0.1.0 - first public release
+- 0.2.0 - freeze bitstream format, remove zlib and packARI dependencies
+- 0.2.1 - add match finder for same character sequences
+- 0.3.0 - split up large deflate streams into "meta-blocks" of a few megabyte each
         (this should help keep memory usage in check)
-
+- 0.3.1 - mitigation against zlib level estimation failure due to 
+        "meta block splitting". For one 350KiB file compressed at zlib level 1,
+         reconstruction size goes from 35KiB to 1.5KiB. Without meta-blocks it
+         would be 3 bytes...
 
 
 License

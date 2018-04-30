@@ -42,6 +42,7 @@ struct PreflateCompLevelEstimatorState {
   const std::vector<PreflateTokenBlock>& blocks;
   PreflateCompLevelInfo info;
   uint16_t wsize;
+  size_t off0;
 
   PreflateCompLevelEstimatorState(const int wbits, const int mbits,
                                   const std::vector<unsigned char>& unpacked_output,
