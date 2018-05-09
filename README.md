@@ -147,7 +147,7 @@ Changes
          would be 3 bytes...
 - 0.3.2 - bug fix: preflate would occasionally believe that it could
           treat "abaaaa" as a sequence of a's, totally ignoring the b.
-          Thanks to Gonzalo Munez for finding this.
+          Thanks to Gonzalo Munoz for finding this.
 
 
 License
