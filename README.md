@@ -1,4 +1,4 @@
-preflate v0.3.1
+preflate v0.3.2
 ===============
 Library to split deflate streams into uncompressed data and reconstruction information,
 or reconstruct the original deflate stream from those two. 
@@ -145,6 +145,9 @@ Changes
         "meta block splitting". For one 350KiB file compressed at zlib level 1,
          reconstruction size goes from 35KiB to 1.5KiB. Without meta-blocks it
          would be 3 bytes...
+- 0.3.2 - bug fix: preflate would occasionally believe that it could
+          treat "abaaaa" as a sequence of a's, totally ignoring the b.
+          Thanks to Gonzola Munez for finding this.
 
 
 License
