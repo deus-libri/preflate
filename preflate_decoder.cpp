@@ -150,7 +150,7 @@ bool preflate_decode(OutputStream& unpacked_output,
   size_t MBcount = 0;
 
   std::queue<std::future<std::shared_ptr<PreflateDecoderTask>>> futureQueue;
-  size_t queueLimit = 0;// std::min(2 * globalTaskPool.extraThreadCount(), (1 << 26) / MBThreshold);
+  size_t queueLimit = std::min(2 * globalTaskPool.extraThreadCount(), (1 << 26) / MBThreshold);
   bool fail = false;
 
   do {
@@ -222,7 +222,6 @@ bool preflate_decode(OutputStream& unpacked_output,
                                  std::move(uncompressedDataForMeta),
                                  uncompressedOffset,
                                  last, paddingBits);
-        printf("%d (direct)\n", MBcount);
         if (!task.analyze() || !task.encode()) {
           return false;
         }
@@ -233,9 +232,6 @@ bool preflate_decode(OutputStream& unpacked_output,
           std::shared_ptr<PreflateDecoderTask> data = first.get();
           if (!data || !data->encode()) {
             fail = true;
-          }
-          if (!!data) {
-            printf("%d\n", data->id());
           }
         }
         std::shared_ptr<PreflateDecoderTask> ptask;
@@ -264,9 +260,6 @@ bool preflate_decode(OutputStream& unpacked_output,
     std::shared_ptr<PreflateDecoderTask> data = first.get();
     if (fail || !data || !data->encode()) {
       fail = true;
-    }
-    if (!!data) {
-      printf("%d\n", data->id());
     }
   }
   decOutCache.flush();

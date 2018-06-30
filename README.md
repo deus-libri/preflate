@@ -1,4 +1,4 @@
-preflate v0.3.2
+preflate v0.3.4
 ===============
 Library to split deflate streams into uncompressed data and reconstruction information,
 or reconstruct the original deflate stream from those two. 
@@ -148,6 +148,12 @@ Changes
 - 0.3.2 - bug fix: preflate would occasionally believe that it could
           treat "abaaaa" as a sequence of a's, totally ignoring the b.
           Thanks to Gonzalo Munoz for finding this.
+- 0.3.3 - add task pool to handle meta blocks in parallel. 
+         (multi-threading is why I added meta blocks in the first place.)
+         for small deflate streams consisting of only one meta block, the task pool is ignored.
+- 0.3.4 - bug fix for 0.3.1: preflate would occasionally fail because the
+          zlib parameter estimator would wrongly restrict its search range
+          for large deflate streams split into meta blocks
 
 
 License
