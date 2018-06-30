@@ -86,7 +86,11 @@ in SIZE.
 It's quite slow. Since 0.2.1, there is some optimization for long runs of the same byte (e.g.
 \0 or spaces), and some files profit from that tremendously (which were ten times
 slower than now), but for most files the gain is only a few percent.
-Both "precomp" and "reflate" BEAT "preflate" in SPEED. (Expected to be around
+Since 0.3.3, preflate utilizes a task pool which gives a nice
+speedup when handling large deflate streams on multi-core machines.
+Single thread performance is still poor though.
+Both "precomp" and "reflate" BEAT "preflate" in SPEED for small deflate
+streams or when restricted to a single core. (Expected to be around
 50-500%).
 
 However, "preflate" eats anything and can be successfully applied to files in which
@@ -98,8 +102,11 @@ How do I build it?
 ------------------
 There is a make file, but it has only been tested so far with MinGW gmake.
 The produced executable is larger than 1MiB, while the MSVC compiler generated
-executables were around 100KiB. The reason for that is unclear at the moment.
+executables were around 100KiB. The reason for that is unclear at the moment. 
 There is also a CMake script which hopefully works for non Windows platforms.
+
+Note: Support for std::thread (used in preflate since 0.3.3) is tricky
+in MinGW, and you might need particular MinGW builds for that to work.
 
 
 Credits
