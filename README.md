@@ -1,4 +1,4 @@
-preflate v0.3.4
+preflate v0.3.5
 ===============
 Library to split deflate streams into uncompressed data and reconstruction information,
 or reconstruct the original deflate stream from those two. 
@@ -161,7 +161,11 @@ Changes
 - 0.3.4 - bug fix for 0.3.1: preflate would occasionally fail because the
           zlib parameter estimator would wrongly restrict its search range
           for large deflate streams split into meta blocks
-
+- 0.3.5 - bug fix: some undefined behaviour could lead to crashes.
+          Thanks to Andrew Epstein for reporting the bug and pointing to clang's sanitizers
+          to spot out-of-bounds accesses and undefined behaviour.
+          Also, 0.3.3 introduced a crash bug in the context of large invalid deflate streams.
+          Thanks to Christian Schneider for reporting.
 
 License
 -------
